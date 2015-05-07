@@ -50,6 +50,7 @@ import se.sics.p2ptoolbox.util.network.impl.BasicNatedAddress;
 
 /**
  * @author Alex Ormenisan <aaor@sics.se>
+ * @author Md. Rizvi Hasan <mrhasan@kth.se>
  */
 public class SwimScenario {
 
@@ -252,8 +253,8 @@ public class SwimScenario {
 
                 StochasticProcess startPeers = new StochasticProcess() {
                     {
-                        eventInterArrivalTime(constant(1000));
-                        raise(3, startNodeOp, new GenIntSequentialDistribution(new Integer[]{10, 13, 17}));
+                        eventInterArrivalTime(constant(1000));                        
+                        raise(3, startNodeOp, new GenIntSequentialDistribution(new Integer[]{18,17,10}));
                     }
                 };
 
@@ -287,7 +288,7 @@ public class SwimScenario {
 
                 startAggregator.start();
                 startPeers.startAfterTerminationOf(1000, startAggregator);
-//                stopPeers.startAfterTerminationOf(10000, startPeers);
+//                killPeers.startAfterTerminationOf(10000, startPeers);
 //                deadLinks1.startAfterTerminationOf(10000,startPeers);
 //                disconnectedNodes1.startAfterTerminationOf(10000, startPeers);
                 fetchSimulationResult.startAfterTerminationOf(30*1000, startPeers);
