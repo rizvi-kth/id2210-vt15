@@ -18,13 +18,20 @@
  */
 package se.kth.swim;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Random;
 import java.util.Set;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import se.kth.swim.croupier.CroupierConfig;
 import se.kth.swim.croupier.CroupierPort;
 import se.kth.swim.croupier.msg.CroupierSample;
+import se.kth.swim.croupier.util.Container;
 import se.kth.swim.msg.net.NetMsg;
 import se.sics.kompics.ComponentDefinition;
 import se.sics.kompics.Handler;
@@ -35,7 +42,10 @@ import se.sics.kompics.Start;
 import se.sics.kompics.Stop;
 import se.sics.kompics.network.Header;
 import se.sics.kompics.network.Network;
+import se.sics.p2ptoolbox.util.network.NatType;
 import se.sics.p2ptoolbox.util.network.NatedAddress;
+import se.sics.p2ptoolbox.util.network.impl.BasicAddress;
+import se.sics.p2ptoolbox.util.network.impl.BasicNatedAddress;
 import se.sics.p2ptoolbox.util.network.impl.RelayHeader;
 import se.sics.p2ptoolbox.util.network.impl.SourceHeader;
 
@@ -49,6 +59,18 @@ public class NatTraversalComp extends ComponentDefinition {
     private Negative<Network> local = provides(Network.class);
     private Positive<Network> network = requires(Network.class);
     private Positive<CroupierPort> croupier = requires(CroupierPort.class);
+    // -- Riz
+    private Negative<NatNotifyPort> NatNotify = provides(NatNotifyPort.class);
+    private static InetAddress localHost; 
+    static {
+        try {
+            localHost = InetAddress.getByName("127.0.0.1");
+        } catch (UnknownHostException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    // --
 
     private final NatedAddress selfAddress;
     private final Random rand;
@@ -149,6 +171,24 @@ public class NatTraversalComp extends ComponentDefinition {
         public void handle(CroupierSample event) {
             log.info("{} croupier public nodes:{}", selfAddress.getBaseAdr(), event.publicSample);
             //use this to change parent in case it died
+            // -- Riz
+            if (!selfAddress.isOpen()){
+            	
+	            // PARENTS-FROM-CROUPIER: Get the parents form the Croupier
+	            Set<NatedAddress> _parents = new HashSet<NatedAddress>();
+	            Iterator _i = event.publicSample.iterator();
+	            while(_i.hasNext()){
+	            	Container<NatedAddress, Object> _a = (Container<NatedAddress, Object>) _i.next();
+	            	log.info("{} ", _a.getSource());
+	            	_parents.add(_a.getSource());
+	            }            
+	            // NEW-ADDRESS: Create new address with new parents  
+	            NatedAddress _nodeAddress = new BasicNatedAddress(new BasicAddress(localHost, 12345, selfAddress.getId()), NatType.NAT, _parents);
+	            
+	            trigger(new se.kth.swim.msg.NatNotify(_nodeAddress), NatNotify);
+            }
+            // --
+            
         }
     };
     

@@ -18,9 +18,12 @@
  */
 package se.kth.swim;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
@@ -30,10 +33,20 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import se.kth.swim.croupier.CroupierPort;
+import se.kth.swim.msg.Ping2ndHand;
+import se.kth.swim.msg.PingReq;
 import se.kth.swim.msg.Pong;
+import se.kth.swim.msg.NatNotify;
+import se.kth.swim.msg.Pong2ndHand;
+import se.kth.swim.msg.PongReq;
 import se.kth.swim.msg.Status;
 import se.kth.swim.msg.net.NetPing;
+import se.kth.swim.msg.net.NetPing2ndHand;
+import se.kth.swim.msg.net.NetPingReq;
 import se.kth.swim.msg.net.NetPong;
+import se.kth.swim.msg.net.NetPong2ndHand;
+import se.kth.swim.msg.net.NetPongReq;
 import se.kth.swim.msg.net.NetStatus;
 import se.sics.kompics.ComponentDefinition;
 import se.sics.kompics.Handler;
@@ -46,7 +59,10 @@ import se.sics.kompics.timer.CancelTimeout;
 import se.sics.kompics.timer.SchedulePeriodicTimeout;
 import se.sics.kompics.timer.Timeout;
 import se.sics.kompics.timer.Timer;
+import se.sics.p2ptoolbox.util.network.NatType;
 import se.sics.p2ptoolbox.util.network.NatedAddress;
+import se.sics.p2ptoolbox.util.network.impl.BasicAddress;
+import se.sics.p2ptoolbox.util.network.impl.BasicNatedAddress;
 
 /**
  * @author Alex Ormenisan <aaor@sics.se>
@@ -57,8 +73,12 @@ public class SwimComp extends ComponentDefinition {
     private static final Logger log = LoggerFactory.getLogger(SwimComp.class);
     private Positive<Network> network = requires(Network.class);
     private Positive<Timer> timer = requires(Timer.class);
-
-    private final NatedAddress selfAddress;
+    // -- Riz
+    private Positive<NatNotifyPort> NatNotify = requires(NatNotifyPort.class);
+    // --
+    
+    //private final NatedAddress selfAddress;
+    private NatedAddress selfAddress;
     private final Set<NatedAddress> bootstrapNodes;
     private final NatedAddress aggregatorAddress;
 
@@ -68,6 +88,9 @@ public class SwimComp extends ComponentDefinition {
     private int receivedPings = 0;    
     
     //-- Riz   
+    private static InetAddress localHost;
+    private final Random rand;
+    
     private int sentPings = 0;
     private int receivedPongs = 0;
     
@@ -76,6 +99,7 @@ public class SwimComp extends ComponentDefinition {
     private Deque<NatedAddress> deletedNodeList = new LinkedList<NatedAddress>();
     private int JOIN_QUEUE_SIZE = 5;
     private int DELETE_QUEUE_SIZE = 5;
+    private int PING_REQ_RANDOM_K = 2;
     //--
       
     
@@ -92,14 +116,31 @@ public class SwimComp extends ComponentDefinition {
         subscribe(handlePingTimeout, timer);
         subscribe(handleStatusTimeout, timer);
         // -- Rizvi
+        this.rand = new Random();
+        subscribe(handleNatNotify, NatNotify);
         subscribe(handlePong, network);
-//        subscribe(handlePingReq, network);
-//        subscribe(handlePongReq, network);
-//        subscribe(handlePing2ndHand, network);
-//        subscribe(handlePong2ndHand, network);        
+        subscribe(handlePingReq, network);
+        subscribe(handlePongReq, network);
+        subscribe(handlePing2ndHand, network);
+        subscribe(handlePong2ndHand, network);        
         
         // --
     }
+    
+    
+    // -- Riz
+
+    private Handler<NatNotify> handleNatNotify = new Handler<NatNotify>() {
+
+        @Override
+        public void handle(NatNotify event) {
+//            log.info("Old Parents {} :: ... ::: ... :: New Parents {}", new Object[]{selfAddress.getParents(), event.getChangedNatAddress().getParents() });            
+        }
+
+    };
+
+    
+    // --
 
     private Handler<Start> handleStart = new Handler<Start>() {
 
@@ -109,7 +150,7 @@ public class SwimComp extends ComponentDefinition {
 			//for (NatedAddress pt : bootstrapNodes){
 			//	log.info("Partner >> {} ", new Object[]{pt.getId()});
 			//}            
-            log.info("Parent >> [{}] ", new Object[]{selfAddress.getParents()});
+            log.info("{}'s Parent >> [{}] ", new Object[]{selfAddress.getId(),selfAddress.getParents()});
             
             //	-- Riz [ List the partners for this node ].
             
@@ -123,7 +164,7 @@ public class SwimComp extends ComponentDefinition {
             	
             	for (java.util.Iterator<VicinityEntry> iterator = vicinityNodeList.iterator(); iterator.hasNext();)
             	{
-            		log.info("Partners from boot: {} ", ((VicinityEntry)iterator.next()).nodeAdress.getId());            		            		
+            		log.info("{}'s partners from boot: {} ", selfAddress.getId(), ((VicinityEntry)iterator.next()).nodeAdress.getId());            		            		
             	}
             	schedulePeriodicPing();
             }                        
@@ -227,6 +268,39 @@ public class SwimComp extends ComponentDefinition {
         @Override
         public void handle(PingTimeout event) {            
             // -- Riz
+        	// Testing ***
+        	/*
+        	try {
+				localHost = InetAddress.getByName("127.0.0.1");
+			} catch (UnknownHostException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+        	if (selfAddress.getId() == 17 )
+        	{
+        		Set<NatedAddress> _parents = new HashSet<NatedAddress>();
+        		if (vicinityNodeList.size() > 1)
+        			_parents.add(vicinityNodeList.get(1).nodeAdress);
+        		
+        		NatedAddress nodeAddress = new BasicNatedAddress(new BasicAddress(localHost, 12345, selfAddress.getId()), NatType.NAT, _parents);
+        		if (selfAddress.equals(nodeAddress))
+        			log.info("{} with parent {} and {} with parent {} equals by equal func  ", new Object[]{selfAddress,selfAddress.getParents() ,nodeAddress,nodeAddress.getParents() });
+        		else
+        			log.info("{} with parent {} and {} with parent {} not equals by equal func  ", new Object[]{selfAddress,selfAddress.getParents() ,nodeAddress,nodeAddress.getParents() });
+        		
+        		if (selfAddress.hashCode() == nodeAddress.hashCode())
+        			log.info("{} with parent {} and {} with parent {} equals by HashCode  ", new Object[]{selfAddress,selfAddress.getParents() ,nodeAddress,nodeAddress.getParents() });
+        		else
+        			log.info("{} with parent {} and {} with parent {} not equals by HashCode  ", new Object[]{selfAddress,selfAddress.getParents() ,nodeAddress,nodeAddress.getParents()  });
+        		
+        		if (selfAddress.getId().equals(nodeAddress.getId()));
+        			log.info("{} and {} equals by ID   ", new Object[]{selfAddress,nodeAddress });
+        		
+        	}        
+        	*/	
+        	// Testing ***
+        	
+        	
         	// FILTER: Filter out the waiting-for-pong nodes
         	// SUSPEND: Suspend nodes if too long waiting counter
         	Set<NatedAddress> _pingCandidates = new HashSet<NatedAddress>(); 
@@ -268,21 +342,38 @@ public class SwimComp extends ComponentDefinition {
             
             
     		// PING-REQ: Trigger a Ping-Req for this suspected node to random K nodes in vicinity list
-//            if (_justSuspected != null){
-//            	for (VicinityEntry vNode : vicinityNodeList){
-//            		if (vNode != _justSuspected && vNode.nodeStatus == "LIVE"){
-//            			// select random k nodes ...
-//            			// ..
-//            			trigger(new NetPingReq(selfAddress, vNode.nodeAdress, new PingReq(_justSuspected.nodeAdress)), network);            			
-//            		}            			
-//            	}
-//            }
+            if (_justSuspected != null){
+            	// Get all the live nodes
+				Set<NatedAddress> _liveList = new HashSet<NatedAddress>();    				
+				for (VicinityEntry vNode : vicinityNodeList){
+					if (vNode != _justSuspected && vNode.nodeStatus == "LIVE"){
+						_liveList.add(vNode.nodeAdress);
+					}
+				}
+				log.info("{} going to ping-req among {} ", new Object[]{selfAddress.getId(), _liveList });    			
+				// select random k nodes from vicinity list...
+    			if (PING_REQ_RANDOM_K > 0 && PING_REQ_RANDOM_K < _liveList.size()){
+    				for(int k=0 ; k < PING_REQ_RANDOM_K; k++ ){
+    					NatedAddress _randLive =  randomNode(_liveList);
+    					log.info("{} ping-req to random  {} ", new Object[]{selfAddress.getId(), _randLive });
+    					trigger(new NetPingReq(selfAddress, _randLive, new PingReq(_justSuspected.nodeAdress)), network);
+    					_liveList.remove(_randLive);
+    				}
+    			}    				
+    			else{
+    				// Send ping-req to all live nodes.
+	            	for (NatedAddress _live : _liveList){
+	            		log.info("{} ping-req to {} ", new Object[]{selfAddress.getId(), _live });
+	            		trigger(new NetPingReq(selfAddress, _live, new PingReq(_justSuspected.nodeAdress)), network);         			
+	            	}
+    			}
+            }
         	
         	
         	// PING: ping the ping candidates 
         	if (!_pingCandidates.isEmpty() )
         	{
-        		log.info("{} has ping cnadidates {} ", new Object[]{selfAddress.getId(),_pingCandidates.size()  });
+        		log.info("{} has ping candidates {} ", new Object[]{selfAddress.getId(),_pingCandidates.size()  });
         		// If the set with single element, ping that
         		if (_pingCandidates.size() == 1 ){
         			// Ping the node
@@ -290,19 +381,20 @@ public class SwimComp extends ComponentDefinition {
         		}
         		// Pick a random element to ping
         		else{
-        			int size = _pingCandidates.size();
-        			int item = new Random().nextInt(size); // In real life, the Random object should be rather more shared than this
-        			log.info("{} has ping cnadidates {}, going to ping {}th ", new Object[]{selfAddress.getId(),size,item  });
-        			int i = 0;        			
-        			for(NatedAddress pingPartner : _pingCandidates)
-        			{
-        			    if (i == item){        			    	
-        			    	// Ping the node
-        			    	goPingTheNode(pingPartner);
-        			    	break;
-        			    }   
-        			    i = i + 1;
-        			}
+        			goPingTheNode(randomNode(_pingCandidates));
+//        			int size = _pingCandidates.size();
+//        			int item = new Random().nextInt(size); // In real life, the Random object should be rather more shared than this
+//        			log.info("{} has ping candidates {}, going to ping {}th ", new Object[]{selfAddress.getId(),size,item  });
+//        			int i = 0;        			
+//        			for(NatedAddress pingPartner : _pingCandidates)
+//        			{
+//        			    if (i == item){        			    	
+//        			    	// Ping the node
+//        			    	goPingTheNode(pingPartner);
+//        			    	break;
+//        			    }   
+//        			    i = i + 1;
+//        			}
         		}        		
         	}
             //--
@@ -311,6 +403,68 @@ public class SwimComp extends ComponentDefinition {
         }
 
     };
+    
+    // -- Riz
+    
+    // Handling PingReq
+    private Handler<NetPingReq> handlePingReq = new Handler<NetPingReq>() {
+
+        @Override
+        public void handle(NetPingReq event) {      	
+        	
+        	log.info("{} received ping-req from:{} for {} ", new Object[]{selfAddress.getId(), event.getHeader().getSource(),event.getContent().GetTestSubjectNode()});        	
+        	trigger(new NetPing2ndHand(selfAddress, event.getContent().GetTestSubjectNode(), new Ping2ndHand(event.getHeader().getSource())), network);
+        }
+
+    };
+    
+    // Handle Pong-Req
+    private Handler<NetPongReq> handlePongReq = new Handler<NetPongReq>() {
+
+        @Override
+        public void handle(NetPongReq event) {      	
+        	
+        	log.info("{} received pong-req from:{} for {} ", new Object[]{selfAddress.getId(), event.getHeader().getSource(),event.getContent().GetTestSubjectNode()});        	
+        	NatedAddress _suspectedNode = event.getContent().GetTestSubjectNode();
+        	// check in the vicinity list if _suspectedNode is SUSPECTED then make it LIVE. 
+        	for (VicinityEntry partner : vicinityNodeList){
+        		if (partner.nodeAdress == _suspectedNode && partner.nodeStatus == "SUSPECTED"){
+        			partner.waitingForPong = false;
+        			partner.waitingForPongCount = 0;
+        			partner.nodeStatus = "LIVE";
+        		}
+        	}
+        }
+
+    };
+    
+    
+    // Handling Ping2ndHand
+    private Handler<NetPing2ndHand> handlePing2ndHand = new Handler<NetPing2ndHand>() {
+
+        @Override
+        public void handle(NetPing2ndHand event) {
+        	
+            log.info("{} received 2nd-hand-ping from:{} with caller {} ", new Object[]{selfAddress.getId(), event.getHeader().getSource(),event.getContent().GetTestRequesterNode()});
+            trigger(new NetPong2ndHand(selfAddress, event.getHeader().getSource(), new Pong2ndHand(event.getContent().GetTestRequesterNode())) ,network);            
+        }
+    };
+
+    
+    // Handling Pong2ndHand
+    private Handler<NetPong2ndHand> handlePong2ndHand = new Handler<NetPong2ndHand>() {
+
+        @Override
+        public void handle(NetPong2ndHand event) {
+        	
+            log.info("{} received 2nd-hand-pong from:{} with caller {} ", new Object[]{selfAddress.getId(), event.getHeader().getSource(),event.getContent().GetTestRequesterNode()});
+            trigger(new NetPongReq(selfAddress, event.getContent().GetTestRequesterNode(), new PongReq(event.getHeader().getSource())) ,network);            
+        }
+    };
+
+    
+    
+    // --
 
 
     // Timer Status
@@ -480,6 +634,16 @@ public class SwimComp extends ComponentDefinition {
       	if (partner.nodeAdress == pingPartner)
       		partner.waitingForPong = true;
       }	
+    }
+    
+    private NatedAddress randomNode(Set<NatedAddress> nodes) {
+        int index = rand.nextInt(nodes.size());
+        Iterator<NatedAddress> it = nodes.iterator();
+        while(index > 0) {
+            it.next();
+            index--;
+        }
+        return it.next();
     }
     
 

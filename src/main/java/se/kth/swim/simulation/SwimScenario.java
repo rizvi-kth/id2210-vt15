@@ -73,15 +73,17 @@ public class SwimScenario {
         Set<Pair<Integer, Integer>> deadLinks;
 
         deadLinks = new HashSet<Pair<Integer, Integer>>();
-        deadLinks.add(Pair.with(10, 12));
-        deadLinks.add(Pair.with(12, 10));
+        deadLinks.add(Pair.with(10, 18));
+        deadLinks.add(Pair.with(18, 10));
         deadLinksSets.put(1, deadLinks);
 
+        /*       
         deadLinks = new HashSet<Pair<Integer, Integer>>();
         deadLinks.add(Pair.with(10, 12));
         deadLinks.add(Pair.with(12, 10));
         deadLinks.add(Pair.with(13, 10));
         deadLinksSets.put(2, deadLinks);
+        */
     }
 
     //Make sure disconnected nodes reflect your nodes in the system
@@ -254,14 +256,23 @@ public class SwimScenario {
                 StochasticProcess startPeers = new StochasticProcess() {
                     {
                         eventInterArrivalTime(constant(1000));                        
-                        raise(3, startNodeOp, new GenIntSequentialDistribution(new Integer[]{18,17,10}));
+                        raise(3, startNodeOp, new GenIntSequentialDistribution(new Integer[]{18,16,10}));
+                    }
+                };
+                
+                StochasticProcess joinPeers = new StochasticProcess() {
+                    {
+                        eventInterArrivalTime(constant(1000));                          
+                        raise(2, startNodeOp, new GenIntSequentialDistribution(new Integer[]{24,28}));
+                        //raise(100, startNodeOp, new BasicIntSequentialDistribution(10));
+                        
                     }
                 };
 
                 StochasticProcess killPeers = new StochasticProcess() {
                     {
                         eventInterArrivalTime(constant(1000));
-                        raise(1, killNodeOp, new ConstantDistribution(Integer.class, 10));
+                        raise(1, killNodeOp, new ConstantDistribution(Integer.class, 18));
                     }
                 };
 
@@ -288,11 +299,13 @@ public class SwimScenario {
 
                 startAggregator.start();
                 startPeers.startAfterTerminationOf(1000, startAggregator);
-//                killPeers.startAfterTerminationOf(10000, startPeers);
-//                deadLinks1.startAfterTerminationOf(10000,startPeers);
+                deadLinks1.startAfterTerminationOf(10000,startPeers);                                
+                joinPeers.startAfterStartOf(10000, deadLinks1);
+                killPeers.startAfterTerminationOf(30*10000, joinPeers);
+
 //                disconnectedNodes1.startAfterTerminationOf(10000, startPeers);
-                fetchSimulationResult.startAfterTerminationOf(30*1000, startPeers);
-                terminateAfterTerminationOf(1000, fetchSimulationResult);
+                fetchSimulationResult.startAfterTerminationOf(60*1000, startPeers);
+                terminateAfterTerminationOf(60*1000, killPeers);
 
             }
         };
