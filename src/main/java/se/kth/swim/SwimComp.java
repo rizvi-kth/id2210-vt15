@@ -100,23 +100,21 @@ public class SwimComp extends ComponentDefinition {
     private int JOIN_QUEUE_SIZE = 5;
     private int DELETE_QUEUE_SIZE = 5;
     private int PING_REQ_RANDOM_K = 2;
-    //--
-      
-    
+    //--    
 
     public SwimComp(SwimInit init) {
         this.selfAddress = init.selfAddress;
         log.info("{} initiating...", selfAddress);
         this.bootstrapNodes = init.bootstrapNodes;
         this.aggregatorAddress = init.aggregatorAddress;
-
+        
         subscribe(handleStart, control);
         subscribe(handleStop, control);
         subscribe(handlePing, network);
         subscribe(handlePingTimeout, timer);
         subscribe(handleStatusTimeout, timer);
         // -- Rizvi
-        this.rand = new Random();
+        this.rand = new Random(init.seed);
         subscribe(handleNatNotify, NatNotify);
         subscribe(handlePong, network);
         subscribe(handlePingReq, network);
@@ -512,11 +510,14 @@ public class SwimComp extends ComponentDefinition {
         public final NatedAddress selfAddress;
         public final Set<NatedAddress> bootstrapNodes;
         public final NatedAddress aggregatorAddress;
-
-        public SwimInit(NatedAddress selfAddress, Set<NatedAddress> bootstrapNodes, NatedAddress aggregatorAddress) {
+        // -- Riz
+        public final long seed;
+        // --
+        public SwimInit(NatedAddress selfAddress, Set<NatedAddress> bootstrapNodes, NatedAddress aggregatorAddress, long seed) {
             this.selfAddress = selfAddress;
             this.bootstrapNodes = bootstrapNodes;
             this.aggregatorAddress = aggregatorAddress;
+            this.seed = seed;
         }
     }
 

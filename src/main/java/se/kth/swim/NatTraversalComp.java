@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Random;
 import java.util.Set;
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,7 +33,12 @@ import se.kth.swim.croupier.CroupierConfig;
 import se.kth.swim.croupier.CroupierPort;
 import se.kth.swim.croupier.msg.CroupierSample;
 import se.kth.swim.croupier.util.Container;
+import se.kth.swim.msg.PingReq;
+import se.kth.swim.msg.net.NetHeartbeatPing;
+import se.kth.swim.msg.net.NetHeartbeatPong;
 import se.kth.swim.msg.net.NetMsg;
+import se.kth.swim.msg.net.NetPing;
+import se.kth.swim.msg.net.NetPingReq;
 import se.sics.kompics.ComponentDefinition;
 import se.sics.kompics.Handler;
 import se.sics.kompics.Init;
@@ -42,6 +48,10 @@ import se.sics.kompics.Start;
 import se.sics.kompics.Stop;
 import se.sics.kompics.network.Header;
 import se.sics.kompics.network.Network;
+import se.sics.kompics.timer.CancelTimeout;
+import se.sics.kompics.timer.SchedulePeriodicTimeout;
+import se.sics.kompics.timer.Timeout;
+import se.sics.kompics.timer.Timer;
 import se.sics.p2ptoolbox.util.network.NatType;
 import se.sics.p2ptoolbox.util.network.NatedAddress;
 import se.sics.p2ptoolbox.util.network.impl.BasicAddress;
@@ -60,8 +70,12 @@ public class NatTraversalComp extends ComponentDefinition {
     private Positive<Network> network = requires(Network.class);
     private Positive<CroupierPort> croupier = requires(CroupierPort.class);
     // -- Riz
+    private Positive<Timer> timer = requires(Timer.class);
+    private UUID heartbeatPingTimeoutId;
     private Negative<NatNotifyPort> NatNotify = provides(NatNotifyPort.class);
-    private static InetAddress localHost; 
+    private static InetAddress localHost;
+    private NatedAddress selfAddress;
+    private Set<ParentEntry> myParents = new HashSet<ParentEntry>();
     static {
         try {
             localHost = InetAddress.getByName("127.0.0.1");
@@ -69,10 +83,8 @@ public class NatTraversalComp extends ComponentDefinition {
             throw new RuntimeException(ex);
         }
     }
-
     // --
-
-    private final NatedAddress selfAddress;
+    
     private final Random rand;
 
     public NatTraversalComp(NatTraversalInit init) {
@@ -85,6 +97,12 @@ public class NatTraversalComp extends ComponentDefinition {
         subscribe(handleIncomingMsg, network);
         subscribe(handleOutgoingMsg, local);
         subscribe(handleCroupierSample, croupier);
+        // -- Riz
+        subscribe(handleHeartBeatPingTimeout, timer);
+        subscribe(handleHeartbeatPing, network);
+        subscribe(handleHeartbeatPong, network);
+        
+        // --
     }
 
     private Handler<Start> handleStart = new Handler<Start>() {
@@ -92,6 +110,12 @@ public class NatTraversalComp extends ComponentDefinition {
         @Override
         public void handle(Start event) {
             log.info("{} starting...", new Object[]{selfAddress.getId()});
+            for(NatedAddress _node : selfAddress.getParents()){
+            	myParents.add(new ParentEntry(_node));
+            }
+            log.info("{} starting... with patents {}", new Object[]{selfAddress.getId(),selfAddress.getParents()});
+            
+            schedulePeriodicPing();
         }
 
     };
@@ -100,6 +124,9 @@ public class NatTraversalComp extends ComponentDefinition {
         @Override
         public void handle(Stop event) {
             log.info("{} stopping...", new Object[]{selfAddress.getId()});
+            if (heartbeatPingTimeoutId != null) {
+                cancelPeriodicPing();
+            }
         }
 
     };
@@ -169,18 +196,30 @@ public class NatTraversalComp extends ComponentDefinition {
     private Handler handleCroupierSample = new Handler<CroupierSample>() {
         @Override
         public void handle(CroupierSample event) {
-            log.info("{} croupier public nodes:{}", selfAddress.getBaseAdr(), event.publicSample);
+            //log.info("{} croupier public nodes:{}", selfAddress.getBaseAdr(), event.publicSample);
             //use this to change parent in case it died
             // -- Riz
             if (!selfAddress.isOpen()){
+            	log.info("{} croupier public nodes:{}", selfAddress.getBaseAdr(), event.publicSample);
+            	// CHECK CURRENT PARENTS: Check the status of the current parents
+            	NatedAddress _deadParent = null;
+            	for (ParentEntry _p : myParents){
+            		if(_p.waitingForPong && _p.waitingForPongCount > 2){
+            			log.info("{} detected dead parent :{}", selfAddress.getId(), _p.nodeAdress);
+            			_deadParent = _p.nodeAdress;
+            		}            			
+            	}
             	
 	            // PARENTS-FROM-CROUPIER: Get the parents form the Croupier
 	            Set<NatedAddress> _parents = new HashSet<NatedAddress>();
 	            Iterator _i = event.publicSample.iterator();
 	            while(_i.hasNext()){
 	            	Container<NatedAddress, Object> _a = (Container<NatedAddress, Object>) _i.next();
-	            	log.info("{} ", _a.getSource());
-	            	_parents.add(_a.getSource());
+	            	if (_a.getSource() != _deadParent){
+	            		log.info("Possible parents {} ", _a.getSource());
+		            	_parents.add(_a.getSource());	
+	            	}
+	            	
 	            }            
 	            // NEW-ADDRESS: Create new address with new parents  
 	            NatedAddress _nodeAddress = new BasicNatedAddress(new BasicAddress(localHost, 12345, selfAddress.getId()), NatType.NAT, _parents);
@@ -192,6 +231,80 @@ public class NatTraversalComp extends ComponentDefinition {
         }
     };
     
+    
+    
+    // -- Riz
+
+    private Handler<NetHeartbeatPong> handleHeartbeatPong = new Handler<NetHeartbeatPong>() {
+
+        @Override
+        public void handle(NetHeartbeatPong event) {
+            log.info("{} received heartbeat back from:{}", new Object[]{selfAddress.getId(), event.getHeader().getSource()});
+            // UPDATE PARENT STATUS: Change the parent status as alive
+            NatedAddress _liveParent = event.getHeader().getSource();
+            for (ParentEntry _p : myParents){
+            	if (_p.nodeAdress == _liveParent){
+					_p.waitingForPong = false;
+					_p.waitingForPongCount=0;
+					
+            	}
+			}
+            
+        }
+    };
+
+    
+    
+    private Handler<NetHeartbeatPing> handleHeartbeatPing = new Handler<NetHeartbeatPing>() {
+
+        @Override
+        public void handle(NetHeartbeatPing event) {        	
+            log.info("{} received heartbeat from:{}", new Object[]{selfAddress.getId(), event.getHeader().getSource()});
+            // HEART-BEAT-BACK HATED: Heart-beat ping the parents
+            trigger(new NetHeartbeatPong(selfAddress, event.getHeader().getSource()), network);
+        }
+    };
+    
+    private Handler<HeartbeatPingTimeout> handleHeartBeatPingTimeout = new Handler<HeartbeatPingTimeout>() {
+
+        @Override
+        public void handle(HeartbeatPingTimeout event) {            
+        	// HEART-BEAT PARENT: Heart-beat ping the parents  
+   			if ((!selfAddress.isOpen()) && (!myParents.isEmpty())){
+   				for (ParentEntry _p : myParents){
+   					log.info("{} heartbeat to parent {} ", new Object[]{selfAddress.getId(),_p.nodeAdress});
+   					trigger(new NetHeartbeatPing(selfAddress, _p.nodeAdress), network);
+   					_p.waitingForPong = true;
+   					_p.waitingForPongCount++;
+   				}
+   			}            
+        }
+
+    };
+    
+
+    
+    private static class HeartbeatPingTimeout extends Timeout {
+
+        public HeartbeatPingTimeout(SchedulePeriodicTimeout request) {
+            super(request);
+        }
+    }
+    
+    private void schedulePeriodicPing() {
+        SchedulePeriodicTimeout spt = new SchedulePeriodicTimeout(1000, 1000);
+        HeartbeatPingTimeout sc = new HeartbeatPingTimeout(spt);
+        spt.setTimeoutEvent(sc);
+        heartbeatPingTimeoutId = sc.getTimeoutId();
+        trigger(spt, timer);
+    }
+
+    private void cancelPeriodicPing() {
+        CancelTimeout cpt = new CancelTimeout(heartbeatPingTimeoutId );
+        trigger(cpt, timer);
+        heartbeatPingTimeoutId  = null;
+    }
+    // --
     private NatedAddress randomNode(Set<NatedAddress> nodes) {
         int index = rand.nextInt(nodes.size());
         Iterator<NatedAddress> it = nodes.iterator();
