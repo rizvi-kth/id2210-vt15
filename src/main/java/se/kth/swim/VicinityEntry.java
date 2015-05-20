@@ -13,8 +13,7 @@ public class VicinityEntry {
 	public NatedAddress nodeAdress = null;
 	public boolean waitingForPong = false;
 	public int waitingForPongCount = 0;
-	public String nodeStatus = "LIVE"; // LIVE - SUSPECTED - DEAD 
-	
-	
+	public String nodeStatus = "LIVE"; // LIVE - SUSPECTED - DEAD
+	//public int incurnationCount = 0;
 	
 }

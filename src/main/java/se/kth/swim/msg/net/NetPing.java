@@ -30,6 +30,10 @@ public class NetPing extends NetMsg<Ping> {
     public NetPing(NatedAddress src, NatedAddress dst) {
         super(src, dst, new Ping());
     }
+    
+    public NetPing(NatedAddress src, NatedAddress dst, Ping content) {
+        super(src, dst, content);
+    }
 
     private NetPing(Header<NatedAddress> header, Ping content) {
         super(header, content);
