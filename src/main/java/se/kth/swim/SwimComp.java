@@ -208,14 +208,15 @@ public class SwimComp extends ComponentDefinition {
                 AddUniqueToJoinedList(event.getHeader().getSource());
             }
             
+            // MARGE PIGGY-BACK
             MargeAllPiggyBacks(	event.getContent().getPiggyBackedSuspectedNodes(), 
             					event.getContent().getPiggyBackedJoinedNodes(),
             					event.getContent().getPiggyBackedDeadNodes());
             
+            // UPDATE-VIEW: Update the vicinity node info according to the piggyback node info
             UpdateVicinityWithPiggybacks();
             
-            /*
-             * TODO
+            /*             
             // MARGE PIGGY-BACK(SUSPECTED): If the piggy-backed suspected-nodes are merged with its suspected-nodes
             if (event.getContent().getPiggyBackedSuspectedNodes().size() > 0){
             	for(PiggybackEntry suspectedPiggyNode : event.getContent().getPiggyBackedSuspectedNodes()){
@@ -299,10 +300,12 @@ public class SwimComp extends ComponentDefinition {
             	}            	
             }
             
+            // MARGE PIGGY-BACK
             MargeAllPiggyBacks(	event.getContent().getPiggyBackedSuspectedNodes(), 
 					event.getContent().getPiggyBackedJoinedNodes(),
 					event.getContent().getPiggyBackedDeadNodes());
 
+            // UPDATE-VIEW: Update the vicinity node info according to the piggyback node info
             UpdateVicinityWithPiggybacks();
             
             /*
@@ -348,8 +351,7 @@ public class SwimComp extends ComponentDefinition {
 	            			}
             			}
             		}
-            	}
-            	
+            	}            	
             }
             */
             
@@ -413,32 +415,37 @@ public class SwimComp extends ComponentDefinition {
             
             
     		// PING-REQ: Trigger a Ping-Req for this suspected node to random K nodes in vicinity list
-//            if (_justSuspected != null){            	
-//            	// Get all the live nodes
-//				Set<NatedAddress> _liveList = new HashSet<NatedAddress>();    				
-//				for (VicinityEntry vNode : vicinityNodeList){
-//					if (vNode != _justSuspected && vNode.nodeStatus == "LIVE"){
-//						_liveList.add(vNode.nodeAdress);
-//					}
-//				}
-//				log.info("{} going to ping-req among {} ", new Object[]{selfAddress.getId(), _liveList });    			
-//				// select random k nodes from vicinity list...
-//    			if (PING_REQ_RANDOM_K > 0 && PING_REQ_RANDOM_K < _liveList.size()){
-//    				for(int k=0 ; k < PING_REQ_RANDOM_K; k++ ){
-//    					NatedAddress _randLive =  randomNode(_liveList);
-//    					log.info("{} ping-req to random  {} ", new Object[]{selfAddress.getId(), _randLive });
-//    					trigger(new NetPingReq(selfAddress, _randLive, new PingReq(_justSuspected.nodeAdress)), network);
-//    					_liveList.remove(_randLive);
-//    				}
-//    			}    				
-//    			else{
-//    				// Send ping-req to all live nodes.
-//	            	for (NatedAddress _live : _liveList){
-//	            		log.info("{} ping-req to {} ", new Object[]{selfAddress.getId(), _live });
-//	            		trigger(new NetPingReq(selfAddress, _live, new PingReq(_justSuspected.nodeAdress)), network);         			
-//	            	}
-//    			}
-//            }
+            if (_justSuspected != null){            	
+            	// Piggyback the ping
+            	Ping _parasitePing = new Ping(joinedNodeList, deletedNodeList, suspectedNodeList);
+            	
+            	// Get all the live nodes
+				Set<NatedAddress> _liveList = new HashSet<NatedAddress>();    				
+				for (VicinityEntry vNode : vicinityNodeList){
+					if (vNode != _justSuspected && vNode.nodeStatus == "LIVE"){
+						_liveList.add(vNode.nodeAdress);
+					}
+				}
+				log.info("{} going to ping-req among {} ", new Object[]{selfAddress.getId(), _liveList });
+				
+				
+    			if (PING_REQ_RANDOM_K > 0 && PING_REQ_RANDOM_K < _liveList.size()){
+    				// select random k nodes from vicinity list...
+    				for(int k=0 ; k < PING_REQ_RANDOM_K; k++ ){
+    					NatedAddress _randLive =  randomNode(_liveList);
+    					log.info("{} ping-req to random  {} ", new Object[]{selfAddress.getId(), _randLive });    					 
+    					trigger(new NetPingReq(selfAddress, _randLive, new PingReq(_justSuspected.nodeAdress, _parasitePing)), network);
+    					_liveList.remove(_randLive);
+    				}
+    			}    				
+    			else{
+    				// Send ping-req to all live nodes.
+	            	for (NatedAddress _live : _liveList){
+	            		log.info("{} ping-req to {} ", new Object[]{selfAddress.getId(), _live });
+	            		trigger(new NetPingReq(selfAddress, _live, new PingReq(_justSuspected.nodeAdress,_parasitePing)), network);         			
+	            	}
+    			}
+            }
         	
         	
         	// PING: ping the ping candidates 
@@ -471,7 +478,9 @@ public class SwimComp extends ComponentDefinition {
         public void handle(NetPingReq event) {      	
         	
         	log.info("{} received ping-req from:{} for {} ", new Object[]{selfAddress.getId(), event.getHeader().getSource(),event.getContent().GetTestSubjectNode()});        	
-        	trigger(new NetPing2ndHand(selfAddress, event.getContent().GetTestSubjectNode(), new Ping2ndHand(event.getHeader().getSource())), network);
+        	trigger(new NetPing2ndHand(selfAddress, event.getContent().GetTestSubjectNode(), new Ping2ndHand(event.getHeader().getSource(),event.getContent().getParasitePing())), network);
+        	
+        	
         }
 
     };
@@ -485,13 +494,23 @@ public class SwimComp extends ComponentDefinition {
         	log.info("{} received pong-req from:{} for {} ", new Object[]{selfAddress.getId(), event.getHeader().getSource(),event.getContent().GetTestSubjectNode()});        	
         	NatedAddress _suspectedNode = event.getContent().GetTestSubjectNode();
         	// check in the vicinity list if _suspectedNode is SUSPECTED then make it LIVE. 
-        	for (VicinityEntry partner : vicinityNodeList){
-        		if (partner.nodeAdress == _suspectedNode && partner.nodeStatus == "SUSPECTED"){
-        			partner.waitingForPong = false;
-        			partner.waitingForPongCount = 0;
-        			partner.nodeStatus = "LIVE";
-        		}
-        	}
+//        	for (VicinityEntry partner : vicinityNodeList){
+//        		if (partner.nodeAdress == _suspectedNode && partner.nodeStatus == "SUSPECTED"){
+//        			partner.waitingForPong = false;
+//        			partner.waitingForPongCount = 0;
+//        			partner.nodeStatus = "LIVE";
+//        		}
+//        	}
+        	
+        	// MERGE PIGGY-BACKS
+            MargeAllPiggyBacks(	event.getContent().getParasitePong().getPiggyBackedSuspectedNodes(), 
+            					event.getContent().getParasitePong().getPiggyBackedJoinedNodes(),
+            					event.getContent().getParasitePong().getPiggyBackedDeadNodes());
+            
+            // UPDATE-VIEW: Update the vicinity node info according to the piggyback node info
+            UpdateVicinityWithPiggybacks();
+        	
+        	
         }
 
     };
@@ -504,7 +523,22 @@ public class SwimComp extends ComponentDefinition {
         public void handle(NetPing2ndHand event) {
         	
             log.info("{} received 2nd-hand-ping from:{} with caller {} ", new Object[]{selfAddress.getId(), event.getHeader().getSource(),event.getContent().GetTestRequesterNode()});
-            trigger(new NetPong2ndHand(selfAddress, event.getHeader().getSource(), new Pong2ndHand(event.getContent().GetTestRequesterNode())) ,network);            
+            // ADD PINGER: If the pinger is not in the vicinity-list - add him in the vicinityNodeList and joinedNodeList              
+            if (!vicinityNodeList.contains(event.getHeader().getSource())){
+            	AddUniqueToVicinity(event.getHeader().getSource());
+                AddUniqueToJoinedList(event.getHeader().getSource());
+            }
+            
+            // MERGE PIGGY-BACKS
+            MargeAllPiggyBacks(	event.getContent().getParasitePing().getPiggyBackedSuspectedNodes(), 
+            					event.getContent().getParasitePing().getPiggyBackedJoinedNodes(),
+            					event.getContent().getParasitePing().getPiggyBackedDeadNodes());
+            
+            // UPDATE-VIEW: Update the vicinity node info according to the piggyback node info
+            UpdateVicinityWithPiggybacks();
+            
+            Pong _parasitePong = new Pong(joinedNodeList, deletedNodeList, suspectedNodeList); 
+            trigger(new NetPong2ndHand(selfAddress, event.getHeader().getSource(), new Pong2ndHand(event.getContent().GetTestRequesterNode(), _parasitePong )) ,network);            
         }
     };
 
@@ -516,7 +550,7 @@ public class SwimComp extends ComponentDefinition {
         public void handle(NetPong2ndHand event) {
         	
             log.info("{} received 2nd-hand-pong from:{} with caller {} ", new Object[]{selfAddress.getId(), event.getHeader().getSource(),event.getContent().GetTestRequesterNode()});
-            trigger(new NetPongReq(selfAddress, event.getContent().GetTestRequesterNode(), new PongReq(event.getHeader().getSource())) ,network);            
+            trigger(new NetPongReq(selfAddress, event.getContent().GetTestRequesterNode(), new PongReq(event.getHeader().getSource(),event.getContent().getParasitePong())) ,network);            
         }
     };
 

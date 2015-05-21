@@ -27,15 +27,31 @@ import se.sics.p2ptoolbox.util.network.NatedAddress;
  * @author Alex Ormenisan <aaor@sics.se>
  */
 public class PongReq {
+	
+
+
+
 	// -- Riz
 	private NatedAddress TestSubjectNode = null;
+	private Pong ParasitePong = null; 	// Used to piggyback all the joinedList, deletedList, suspectedList
 	
 	public PongReq()
 	{}
 	
-	public PongReq(NatedAddress p_TestSubjectNode)
-	{
-		this.TestSubjectNode = p_TestSubjectNode;
+//	public PongReq(NatedAddress p_TestSubjectNode)
+//	{
+//		this.TestSubjectNode = p_TestSubjectNode;
+//	}
+	
+	public PongReq(NatedAddress testSubjectNode, Pong parasitePong) {
+		super();
+		TestSubjectNode = testSubjectNode;
+		ParasitePong = parasitePong;
+	}
+	
+	
+	public Pong getParasitePong() {
+		return ParasitePong;
 	}
 	
 	public NatedAddress GetTestSubjectNode(){

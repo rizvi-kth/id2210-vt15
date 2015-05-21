@@ -28,15 +28,30 @@ import se.sics.p2ptoolbox.util.network.NatedAddress;
  */
 public class PingReq {
 	// -- Riz
-	private NatedAddress TestSubjectNode = null;
+	private NatedAddress TestSubjectNode = null;	
+   
+	private Ping ParasitePing = null; 	// Used to piggyback all the joinedList, deletedList, suspectedList  
+	
 	
 	public PingReq()
 	{}
 	
-	public PingReq(NatedAddress p_TestSubjectNode)
-	{
-		this.TestSubjectNode = p_TestSubjectNode;
+//	public PingReq(NatedAddress p_TestSubjectNode)
+//	{
+//		this.TestSubjectNode = p_TestSubjectNode;
+//	}
+	
+	public PingReq(NatedAddress testSubjectNode, Ping parasitePing) {
+		super();
+		TestSubjectNode = testSubjectNode;
+		ParasitePing = parasitePing;
 	}
+
+	
+	public Ping getParasitePing() {
+		return ParasitePing;
+	}
+
 	
 	public NatedAddress GetTestSubjectNode(){
 		return TestSubjectNode;

@@ -29,13 +29,25 @@ import se.sics.p2ptoolbox.util.network.NatedAddress;
 public class Ping2ndHand {
 	// -- Riz
 	private NatedAddress TestRequester = null;
+
+	private Ping ParasitePing = null; 	// Used to piggyback all the joinedList, deletedList, suspectedList 
 	
 	public Ping2ndHand()
 	{}
 	
-	public Ping2ndHand(NatedAddress p_TestRequester)
-	{
-		TestRequester = p_TestRequester;
+//	public Ping2ndHand(NatedAddress p_TestRequester)
+//	{
+//		TestRequester = p_TestRequester;
+//	}
+	
+	public Ping2ndHand(NatedAddress testRequester, Ping parasitePing) {
+		super();
+		TestRequester = testRequester;
+		ParasitePing = parasitePing;
+	}
+	
+	public Ping getParasitePing() {
+		return ParasitePing;
 	}
 	
 	public NatedAddress GetTestRequesterNode(){
