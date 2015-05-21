@@ -208,6 +208,14 @@ public class SwimComp extends ComponentDefinition {
                 AddUniqueToJoinedList(event.getHeader().getSource());
             }
             
+            MargeAllPiggyBacks(	event.getContent().getPiggyBackedSuspectedNodes(), 
+            					event.getContent().getPiggyBackedJoinedNodes(),
+            					event.getContent().getPiggyBackedDeadNodes());
+            
+            UpdateVicinityWithPiggybacks();
+            
+            /*
+             * TODO
             // MARGE PIGGY-BACK(SUSPECTED): If the piggy-backed suspected-nodes are merged with its suspected-nodes
             if (event.getContent().getPiggyBackedSuspectedNodes().size() > 0){
             	for(PiggybackEntry suspectedPiggyNode : event.getContent().getPiggyBackedSuspectedNodes()){
@@ -235,19 +243,29 @@ public class SwimComp extends ComponentDefinition {
             		}            		            		
             	}
             }
-            	
+            */
+            
+            
+            
+            /*
             // UPDATE-VIEW: Update the vicinity node info according to the piggyback node info 
             for (PiggybackEntry _pn : suspectedNodeList){
             	for (VicinityEntry _vn : vicinityNodeList){
             		if(_pn.nodeAdress == _vn.nodeAdress && _vn.nodeStatus != "DEAD"){
-            			_vn.nodeStatus = _pn.nodeStatus; 
-            			_vn.waitingForPong = false;
-            			_vn.waitingForPongCount = 0;
+            			if (_vn.nodeStatus != _pn.nodeStatus){
+            				_vn.nodeStatus = _pn.nodeStatus;
+	            			if(_pn.nodeStatus == "LIVE"){	            				
+	            				_vn.waitingForPong = false;
+	                			_vn.waitingForPongCount = 0;
+	            			}else if(_pn.nodeStatus == "SUSPECTED"){	            				
+	            				_vn.waitingForPong = true;                			
+	            			}
+            			}
             		}
             	}
             	
             }
-            
+            */
             
             trigger(new NetPong(selfAddress, event.getHeader().getSource(),new Pong(joinedNodeList, deletedNodeList, suspectedNodeList)), network);
             
@@ -280,6 +298,14 @@ public class SwimComp extends ComponentDefinition {
             	    }
             	}            	
             }
+            
+            MargeAllPiggyBacks(	event.getContent().getPiggyBackedSuspectedNodes(), 
+					event.getContent().getPiggyBackedJoinedNodes(),
+					event.getContent().getPiggyBackedDeadNodes());
+
+            UpdateVicinityWithPiggybacks();
+            
+            /*
             // MARGE PIGGY-BACK(SUSPECTED): If the piggy-backed suspected-nodes are merged with its suspected-nodes
             if (event.getContent().getPiggyBackedSuspectedNodes().size() > 0){
             	for(PiggybackEntry suspectedPiggyNode : event.getContent().getPiggyBackedSuspectedNodes()){
@@ -312,14 +338,20 @@ public class SwimComp extends ComponentDefinition {
             for (PiggybackEntry _pn : suspectedNodeList){
             	for (VicinityEntry _vn : vicinityNodeList){
             		if(_pn.nodeAdress == _vn.nodeAdress && _vn.nodeStatus != "DEAD"){
-            			_vn.nodeStatus = _pn.nodeStatus; 
-            			_vn.waitingForPong = false;
-            			_vn.waitingForPongCount = 0;
+            			if (_vn.nodeStatus != _pn.nodeStatus){
+            				_vn.nodeStatus = _pn.nodeStatus;
+	            			if(_pn.nodeStatus == "LIVE"){	            				
+	            				_vn.waitingForPong = false;
+	                			_vn.waitingForPongCount = 0;
+	            			}else if(_pn.nodeStatus == "SUSPECTED"){	            				
+	            				_vn.waitingForPong = true;                			
+	            			}
+            			}
             		}
             	}
             	
             }
-            
+            */
             
             
         }
@@ -355,7 +387,7 @@ public class SwimComp extends ComponentDefinition {
             			
             		}  
             		// Dead declare in less than 4 cycle-time or (4*1000) millisecond
-            		if (vNode.nodeStatus == "SUSPECTED" && vNode.waitingForPongCount >= 25 ){
+            		if (vNode.nodeStatus == "SUSPECTED" && vNode.waitingForPongCount >= 30 ){
             			log.info("{} detected DEAD node {} ", new Object[]{selfAddress.getId(), vNode.nodeAdress });
             			vNode.nodeStatus = "DEAD";  
             			_justDead = vNode;
@@ -514,7 +546,6 @@ public class SwimComp extends ComponentDefinition {
     }
 	
 	
-
 	private void cancelPeriodicPing() {
         CancelTimeout cpt = new CancelTimeout(pingTimeoutId);
         trigger(cpt, timer);
@@ -688,6 +719,65 @@ public class SwimComp extends ComponentDefinition {
     	}
 		
 	}
+    
+    protected void MargeAllPiggyBacks(
+			Set<PiggybackEntry> piggyBackedSuspectedNodes,
+			Deque<NatedAddress> piggyBackedJoinedNodes,
+			Deque<NatedAddress> piggyBackedDeadNodes) {
+		
+    	
+    	// MARGE PIGGY-BACK(SUSPECTED): If the piggy-backed suspected-nodes are merged with its suspected-nodes
+        if (piggyBackedSuspectedNodes.size() > 0){
+        	for(PiggybackEntry suspectedPiggyNode : piggyBackedSuspectedNodes){
+        		MargeUniqueToSuspectedList(suspectedPiggyNode);
+        	}
+        }
+        
+        // MARGE PIGGY-BACK(JOINED): If the piggy-backed new nodes are not in the vicinityNodeList - add them 
+        if (piggyBackedJoinedNodes.size() > 0){
+        	for(NatedAddress newPiggyBackedNode : piggyBackedJoinedNodes){
+        		if (newPiggyBackedNode != selfAddress ){
+        			AddUniqueToVicinity(newPiggyBackedNode);
+            		AddUniqueToJoinedList(newPiggyBackedNode);	
+        		}            		            		
+        	}
+        }
+        
+        // MARGE PIGGY-BACK(DEAD): If the piggy-backed dead node are in the vicinityNodeList -  remove them
+        if (piggyBackedDeadNodes.size() > 0){
+        	for(NatedAddress deadPiggyBackedNode : piggyBackedDeadNodes){
+        		if (deadPiggyBackedNode != selfAddress ){
+        			RemoveFromVicinityList(deadPiggyBackedNode);
+        			AddUniqueToDeadList(deadPiggyBackedNode);
+        			RemoveFromsuspectedNodeList(deadPiggyBackedNode);
+        		}            		            		
+        	}
+        }		
+	}
+
+    protected void UpdateVicinityWithPiggybacks(){
+    	
+    	// UPDATE-VIEW: Update the vicinity node info according to the piggyback node info 
+        for (PiggybackEntry _pn : suspectedNodeList){
+        	for (VicinityEntry _vn : vicinityNodeList){
+        		if(_pn.nodeAdress == _vn.nodeAdress && _vn.nodeStatus != "DEAD"){
+        			if (_vn.nodeStatus != _pn.nodeStatus){
+        				_vn.nodeStatus = _pn.nodeStatus;
+            			if(_pn.nodeStatus == "LIVE"){	            				
+            				_vn.waitingForPong = false;
+                			_vn.waitingForPongCount = 0;
+            			}else if(_pn.nodeStatus == "SUSPECTED"){	            				
+            				_vn.waitingForPong = true;                			
+            			}
+        			}
+        		}
+        	}
+        	
+        }
+    	
+    	
+    }
+    
     
     public String ProcessSet(Deque<NatedAddress> vList)
     {
