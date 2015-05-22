@@ -370,7 +370,7 @@ public class SwimComp extends ComponentDefinition {
         	// SUSPEND: Suspend nodes if too long waiting counter
         	// DEAD: Declare a node dead when too long suspended 
         	Set<NatedAddress> _pingCandidates = new HashSet<NatedAddress>(); 
-        	VicinityEntry _justSuspected = null;
+        	Set<VicinityEntry> _justSuspectedList = new HashSet<VicinityEntry>();
         	VicinityEntry _justDead = null;
             for (VicinityEntry vNode : vicinityNodeList){
             	if (vNode.waitingForPong == true){
@@ -385,7 +385,7 @@ public class SwimComp extends ComponentDefinition {
             			// Add to suspected list for dissamination
             			AddUniqueToSuspectedList(vNode);
             			vNode.nodeStatus = "SUSPECTED";
-            			_justSuspected = vNode;
+            			_justSuspectedList.add(vNode);
             			
             		}  
             		// Dead declare in less than 4 cycle-time or (4*1000) millisecond
@@ -412,39 +412,39 @@ public class SwimComp extends ComponentDefinition {
     			
             }
             
-            
-            
-    		// PING-REQ: Trigger a Ping-Req for this suspected node to random K nodes in vicinity list
-            if (_justSuspected != null){            	
-            	// Piggyback the ping
-            	Ping _parasitePing = new Ping(joinedNodeList, deletedNodeList, suspectedNodeList);
-            	
-            	// Get all the live nodes
-				Set<NatedAddress> _liveList = new HashSet<NatedAddress>();    				
-				for (VicinityEntry vNode : vicinityNodeList){
-					if (vNode != _justSuspected && vNode.nodeStatus == "LIVE"){
-						_liveList.add(vNode.nodeAdress);
+    		// PING-REQ: Trigger a Ping-Req for this suspected node to random K nodes in vicinity list            
+            for(VicinityEntry _justSuspected: _justSuspectedList){
+	                        	
+	            	// Piggyback the ping
+	            	Ping _parasitePing = new Ping(joinedNodeList, deletedNodeList, suspectedNodeList);
+	            	
+	            	// Get all the live nodes
+					Set<NatedAddress> _liveList = new HashSet<NatedAddress>();    				
+					for (VicinityEntry vNode : vicinityNodeList){
+						if (vNode != _justSuspected && vNode.nodeStatus == "LIVE"){
+							_liveList.add(vNode.nodeAdress);
+						}
 					}
-				}
-				log.info("{} going to ping-req among {} ", new Object[]{selfAddress.getId(), _liveList });
-				
-				
-    			if (PING_REQ_RANDOM_K > 0 && PING_REQ_RANDOM_K < _liveList.size()){
-    				// select random k nodes from vicinity list...
-    				for(int k=0 ; k < PING_REQ_RANDOM_K; k++ ){
-    					NatedAddress _randLive =  randomNode(_liveList);
-    					log.info("{} ping-req to random  {} ", new Object[]{selfAddress.getId(), _randLive });    					 
-    					trigger(new NetPingReq(selfAddress, _randLive, new PingReq(_justSuspected.nodeAdress, _parasitePing)), network);
-    					_liveList.remove(_randLive);
-    				}
-    			}    				
-    			else{
-    				// Send ping-req to all live nodes.
-	            	for (NatedAddress _live : _liveList){
-	            		log.info("{} ping-req to {} ", new Object[]{selfAddress.getId(), _live });
-	            		trigger(new NetPingReq(selfAddress, _live, new PingReq(_justSuspected.nodeAdress,_parasitePing)), network);         			
-	            	}
-    			}
+					log.info("{} going to ping-req among {} ", new Object[]{selfAddress.getId(), _liveList });
+					
+					
+	    			if (PING_REQ_RANDOM_K > 0 && PING_REQ_RANDOM_K < _liveList.size()){
+	    				// select random k nodes from vicinity list...
+	    				for(int k=0 ; k < PING_REQ_RANDOM_K; k++ ){
+	    					NatedAddress _randLive =  randomNode(_liveList);
+	    					log.info("{} ping-req to random  {} ", new Object[]{selfAddress.getId(), _randLive });    					 
+	    					trigger(new NetPingReq(selfAddress, _randLive, new PingReq(_justSuspected.nodeAdress, _parasitePing)), network);
+	    					_liveList.remove(_randLive);
+	    				}
+	    			}    				
+	    			else{
+	    				// Send ping-req to all live nodes.
+		            	for (NatedAddress _live : _liveList){
+		            		log.info("{} ping-req to {} ", new Object[]{selfAddress.getId(), _live });
+		            		trigger(new NetPingReq(selfAddress, _live, new PingReq(_justSuspected.nodeAdress,_parasitePing)), network);         			
+		            	}
+	    			}
+        	
             }
         	
         	
