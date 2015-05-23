@@ -138,7 +138,7 @@ public class SwimComp extends ComponentDefinition {
 
         @Override
         public void handle(NatNotify event) {
-//            log.info("Old Parents {} :: ... ::: ... :: New Parents {}", new Object[]{selfAddress.getParents(), event.getChangedNatAddress().getParents() });            
+            log.info("{} got Old Parents {} and New Parents {}", new Object[]{selfAddress,selfAddress.getParents(), event.getChangedNatAddress().getParents() });            
         }
 
     };

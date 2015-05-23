@@ -71,7 +71,7 @@ public class NatTraversalComp extends ComponentDefinition {
     private Positive<CroupierPort> croupier = requires(CroupierPort.class);
     // -- Riz
     private String hb_mode = "HB_PARENTS";  // HB_CROUPIER_NODES , HB_PARENTS
-    
+    private int HB_FAIL_THRASHOLD = 2;
     private Positive<Timer> timer = requires(Timer.class);
     private UUID heartbeatPingTimeoutId;
     private Negative<NatNotifyPort> NatNotify = provides(NatNotifyPort.class);
@@ -210,54 +210,46 @@ public class NatTraversalComp extends ComponentDefinition {
             	// CHECK CURRENT PARENTS: Check the status of the current parents            	
             	Set<NatedAddress> _deadParentList = new HashSet<NatedAddress>();
             	for (ParentEntry _p : myParents){
-            		if(_p.waitingForPong && _p.waitingForPongCount > 2){
+            		if(_p.waitingForPong && _p.waitingForPongCount > HB_FAIL_THRASHOLD){
             			log.info("{} detected dead parent :{}", selfAddress.getId(), _p.nodeAdress);
             			_deadParentList.add( _p.nodeAdress) ;
             		}            			
             	}
             	
-            	// CROUPIER-LIST
-	            Set<NatedAddress> _croupierNodes = new HashSet<NatedAddress>();
-	            Iterator _i = event.publicSample.iterator();
-	            while(_i.hasNext()){
-	            	Container<NatedAddress, Object> _a = (Container<NatedAddress, Object>) _i.next();	            	
-	            	log.info("Croupier nodes {} ", _a.getSource());
-	            	_croupierNodes.add(_a.getSource());	
-	            			            	
-	            }
-            	
-            	// FILTER-CROUPIER-LIST: Remoive dead parents from Croupier list.
-            	for (NatedAddress _deadParent : _deadParentList){	            	
-            		_croupierNodes.remove(_deadParent);
-            	}    
-            	
-            	log.info("Possible parents {} ", _croupierNodes);
-            	// IF ENOUGH POSSIBLE PARENTS:
-            	if (_deadParentList.size() > 0 && _croupierNodes.size() > 1){
-            		//SET CURRENT LIST FOR HB: Set global var CroupierNodes to Heartbeat the nodes 
-		            CroupierNodes.clear();
-		            for(NatedAddress _node : _croupierNodes ){
-		            	CroupierNodes.add(new ParentEntry(_node));
+            	if (_deadParentList.size() > 0){
+            		// CROUPIER-LIST
+		            Set<NatedAddress> _croupierNodes = new HashSet<NatedAddress>();
+		            Iterator _i = event.publicSample.iterator();
+		            while(_i.hasNext()){
+		            	Container<NatedAddress, Object> _a = (Container<NatedAddress, Object>) _i.next();	            	
+		            	log.info("Croupier nodes {} ", _a.getSource());
+		            	_croupierNodes.add(_a.getSource());	
+		            			            	
 		            }
-		            
-		            // CHANGE HB MODE: 
-		            hb_mode = "HB_CROUPIER_NODES";  // HB_CROUPIER_NODES , HB_PARENTS
-		            
-		            // NEW-ADDRESS AND PARENTS: Create new address with new parents  
-//		            NatedAddress _nodeAddress = new BasicNatedAddress(new BasicAddress(localHost, 12345, selfAddress.getId()), NatType.NAT, _croupierNodes );
-//		            selfAddress = _nodeAddress;
-//		            myParents.clear();
-//		            for(NatedAddress _node : _croupierNodes ){
-//		            	myParents.add(new ParentEntry(_node));
-//		            }
-//		             
-//		            
-//		            // TRIGGER TO SWIM: send the new address to swim to disseminate
-//		            trigger(new se.kth.swim.msg.NatNotify(_nodeAddress), NatNotify);
-		            
-		            
-		             
+	            	
+	            	// FILTER-CROUPIER-LIST: Remoive dead parents from Croupier list.
+	            	for (NatedAddress _deadParent : _deadParentList){	            	
+	            		_croupierNodes.remove(_deadParent);
+	            	}    
+	            	
+	            	log.info("Possible parents {} ", _croupierNodes);
+	            	// IF ENOUGH POSSIBLE PARENTS:
+	            	if ( _croupierNodes.size() > 1){
+	            		//SET CROUPIER LIST FOR HB: Set global var CroupierNodes to Heartbeat the nodes 
+			            CroupierNodes.clear();
+			            for(NatedAddress _node : _croupierNodes ){
+			            	CroupierNodes.add(new ParentEntry(_node));
+			            }
+			            
+			            // CHANGE HB MODE: 
+			            hb_mode = "HB_CROUPIER_NODES";  // HB_CROUPIER_NODES , HB_PARENTS
+			             
+	            	}
             	}
+            	else{
+            		hb_mode = "HB_PARENTS";
+            	}
+            		
             }
             // --
             
@@ -276,7 +268,7 @@ public class NatTraversalComp extends ComponentDefinition {
             // UPDATE PARENT STATUS: Change the parent status as alive
             NatedAddress _liveNode = event.getHeader().getSource();
             
-            if (hb_mode == "HB_PARENTS"){
+//            if (hb_mode == "HB_PARENTS"){
             	log.info("{} received heartbeat back (RC) from:{}", new Object[]{selfAddress.getId(), event.getHeader().getSource()});
 	            for (ParentEntry _p : myParents){
 	            	if (_p.nodeAdress == _liveNode){
@@ -285,7 +277,7 @@ public class NatTraversalComp extends ComponentDefinition {
 						
 	            	}
 				}
-            }
+//            }
             
             // IF 
             if(hb_mode == "HB_CROUPIER_NODES"){
@@ -300,13 +292,45 @@ public class NatTraversalComp extends ComponentDefinition {
 	            		_liveNodesList.add(_p.nodeAdress);
 				}
             	
-            	if(_liveNodesList.size() > 1){
-            		myParents.clear();
+            	if(_liveNodesList.size() > 0){
+            		
+            		// REMOVE NONRESPONSIVE PATENT
+            		Set<ParentEntry> _liveParents = new HashSet<ParentEntry>();
+            		for (ParentEntry _p: myParents){
+            			if(_p.waitingForPong = true && _p.waitingForPongCount > HB_FAIL_THRASHOLD){
+            				
+            			}else{            				
+            				_liveParents.add(_p);
+            			}
+            			
+            		}
+            		
+            		// MERGE NEW LIVE NODES
+            		myParents.clear();            		
 		            for(NatedAddress _node : _liveNodesList ){
-		            	myParents.add(new ParentEntry(_node));
+		            	boolean found = false;
+		            	for(ParentEntry _p : _liveParents ){
+		            		if (_p.nodeAdress == _node)
+		            			found = true;
+		            	}
+				        if (found == false)    
+				        	myParents.add(new ParentEntry(_node));
 		            }
+		            
 		            log.info("{} got new parents:{}", new Object[]{selfAddress.getId(), _liveNodesList});
-            		hb_mode = "HB_PARENTS";
+            		//hb_mode = "HB_PARENTS";
+            		
+            		// NEW-ADDRESS AND PARENTS: Create new address with new parents
+            		Set<NatedAddress> _parentNodes = new HashSet<NatedAddress>();
+            		for(ParentEntry _node : myParents ){
+            			_parentNodes.add(_node.nodeAdress);
+		            }
+		            NatedAddress _nodeAddress = new BasicNatedAddress(new BasicAddress(localHost, 12345, selfAddress.getId()), NatType.NAT, _parentNodes );
+		            selfAddress = _nodeAddress;
+		            
+		            // TRIGGER TO SWIM: send the new address to swim to disseminate
+		            trigger(new se.kth.swim.msg.NatNotify(_nodeAddress), NatNotify);
+		            
             	}
             	
             }
@@ -321,8 +345,8 @@ public class NatTraversalComp extends ComponentDefinition {
 
         @Override
         public void handle(NetHeartbeatPing event) {        	
-            log.info("{} received heartbeat from:{}", new Object[]{selfAddress.getId(), event.getHeader().getSource()});
-            // HEART-BEAT-BACK HATED: Heart-beat ping the parents
+            //log.info("{} received heartbeat from:{}", new Object[]{selfAddress.getId(), event.getHeader().getSource()});
+            // HEART-BEAT-BACK: Heart-beat-back pong the parents
             trigger(new NetHeartbeatPong(selfAddress, event.getHeader().getSource()), network);
         }
     };
@@ -334,14 +358,14 @@ public class NatTraversalComp extends ComponentDefinition {
         	// HEART-BEAT PARENT: Heart-beat ping the parents  
    			if (!selfAddress.isOpen()){
    				
-   				if (hb_mode == "HB_PARENTS"){   				
+//   				if (hb_mode == "HB_PARENTS"){   				
 	   				for (ParentEntry _p : myParents){
 	   					log.info("{} heartbeat-RC to parent {} ", new Object[]{selfAddress.getId(),_p.nodeAdress});
 	   					trigger(new NetHeartbeatPing(selfAddress, _p.nodeAdress), network);
 	   					_p.waitingForPong = true;
 	   					_p.waitingForPongCount++;
 	   				}
-   				}
+//   				}
    				
    				
    				if (hb_mode == "HB_CROUPIER_NODES"){
