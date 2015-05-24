@@ -203,10 +203,19 @@ public class SwimComp extends ComponentDefinition {
             receivedPings++;
             
             // ADD PINGER: If the pinger is not in the vicinity-list - add him in the vicinityNodeList and joinedNodeList              
-            if (!vicinityNodeList.contains(event.getHeader().getSource())){
-            	AddUniqueToVicinity(event.getHeader().getSource());
-                AddUniqueToJoinedList(event.getHeader().getSource());
-            }
+//            boolean _found = false;
+//            for(VicinityEntry _v: vicinityNodeList){
+//            	if(_v.nodeAdress.getId() == event.getHeader().getSource().getId())
+//            		_found = true;
+//            }           
+//            if (_found == false){
+//            	AddUniqueToVicinity(event.getHeader().getSource());
+//                AddUniqueToJoinedList(event.getHeader().getSource());
+//            }
+        	  AddUniqueToVicinity(event.getHeader().getSource());
+              AddUniqueToJoinedList(event.getHeader().getSource());
+        
+            
             
             // MARGE PIGGY-BACK
             MargeAllPiggyBacks(	event.getContent().getPiggyBackedSuspectedNodes(), 
@@ -216,57 +225,7 @@ public class SwimComp extends ComponentDefinition {
             // UPDATE-VIEW: Update the vicinity node info according to the piggyback node info
             UpdateVicinityWithPiggybacks();
             
-            /*             
-            // MARGE PIGGY-BACK(SUSPECTED): If the piggy-backed suspected-nodes are merged with its suspected-nodes
-            if (event.getContent().getPiggyBackedSuspectedNodes().size() > 0){
-            	for(PiggybackEntry suspectedPiggyNode : event.getContent().getPiggyBackedSuspectedNodes()){
-            		MargeUniqueToSuspectedList(suspectedPiggyNode);
-            	}
-            }
-            
-            // MARGE PIGGY-BACK(JOINED): If the piggy-backed new nodes are not in the vicinityNodeList - add them 
-            if (event.getContent().getPiggyBackedJoinedNodes().size() > 0){
-            	for(NatedAddress newPiggyBackedNode : event.getContent().getPiggyBackedJoinedNodes()){
-            		if (newPiggyBackedNode != selfAddress ){
-            			AddUniqueToVicinity(newPiggyBackedNode);
-                		AddUniqueToJoinedList(newPiggyBackedNode);	
-            		}            		            		
-            	}
-            }
-            
-            // MARGE PIGGY-BACK(DEAD): If the piggy-backed dead node are in the vicinityNodeList -  remove them
-            if (event.getContent().getPiggyBackedDeadNodes().size() > 0){
-            	for(NatedAddress deadPiggyBackedNode : event.getContent().getPiggyBackedDeadNodes()){
-            		if (deadPiggyBackedNode != selfAddress ){
-            			RemoveFromVicinityList(deadPiggyBackedNode);
-            			AddUniqueToDeadList(deadPiggyBackedNode);
-            			RemoveFromsuspectedNodeList(deadPiggyBackedNode);
-            		}            		            		
-            	}
-            }
-            */
-            
-            
-            
-            /*
-            // UPDATE-VIEW: Update the vicinity node info according to the piggyback node info 
-            for (PiggybackEntry _pn : suspectedNodeList){
-            	for (VicinityEntry _vn : vicinityNodeList){
-            		if(_pn.nodeAdress == _vn.nodeAdress && _vn.nodeStatus != "DEAD"){
-            			if (_vn.nodeStatus != _pn.nodeStatus){
-            				_vn.nodeStatus = _pn.nodeStatus;
-	            			if(_pn.nodeStatus == "LIVE"){	            				
-	            				_vn.waitingForPong = false;
-	                			_vn.waitingForPongCount = 0;
-	            			}else if(_pn.nodeStatus == "SUSPECTED"){	            				
-	            				_vn.waitingForPong = true;                			
-	            			}
-            			}
-            		}
-            	}
-            	
-            }
-            */
+           
             
             trigger(new NetPong(selfAddress, event.getHeader().getSource(),new Pong(joinedNodeList, deletedNodeList, suspectedNodeList)), network);
             
@@ -291,7 +250,7 @@ public class SwimComp extends ComponentDefinition {
             
             //CHANGE STATUS: Change the status of the Ponger-node in vicinity-list as NOT waitingForPong  
             for (VicinityEntry _vNode: vicinityNodeList){
-            	if (_vNode.nodeAdress == event.getSource()){            	
+            	if (_vNode.nodeAdress.getId() == event.getSource().getId()){            	
             		_vNode.waitingForPong = false;            		
             	    _vNode.waitingForPongCount = 0;
             	    if (_vNode.nodeStatus == "SUSPECTED"){            	    	
@@ -308,52 +267,7 @@ public class SwimComp extends ComponentDefinition {
             // UPDATE-VIEW: Update the vicinity node info according to the piggyback node info
             UpdateVicinityWithPiggybacks();
             
-            /*
-            // MARGE PIGGY-BACK(SUSPECTED): If the piggy-backed suspected-nodes are merged with its suspected-nodes
-            if (event.getContent().getPiggyBackedSuspectedNodes().size() > 0){
-            	for(PiggybackEntry suspectedPiggyNode : event.getContent().getPiggyBackedSuspectedNodes()){
-            		MargeUniqueToSuspectedList(suspectedPiggyNode);
-            	}
-            }
-            
-            // MARGE PIGGY-BACK(JOINED): If the piggy-backed new nodes are not in the vicinityNodeList - add them 
-            if (event.getContent().getPiggyBackedJoinedNodes().size() > 0){
-            	for(NatedAddress newPiggyBackedNode : event.getContent().getPiggyBackedJoinedNodes()){
-            		if (newPiggyBackedNode != selfAddress ){
-            			AddUniqueToVicinity(newPiggyBackedNode);
-                		AddUniqueToJoinedList(newPiggyBackedNode);	
-            		}            		            		
-            	}
-            }
-            
-            // MARGE PIGGY-BACK(DEAD): If the piggy-backed dead node are in the vicinityNodeList -  remove them
-            if (event.getContent().getPiggyBackedDeadNodes().size() > 0){
-            	for(NatedAddress deadPiggyBackedNode : event.getContent().getPiggyBackedDeadNodes()){
-            		if (deadPiggyBackedNode != selfAddress ){
-            			RemoveFromVicinityList(deadPiggyBackedNode);
-            			AddUniqueToDeadList(deadPiggyBackedNode);
-            			RemoveFromsuspectedNodeList(deadPiggyBackedNode);
-            		}            		            		
-            	}
-            }
-            
-            // UPDATE-VIEW: Update the vicinity node info according to the piggyback node info 
-            for (PiggybackEntry _pn : suspectedNodeList){
-            	for (VicinityEntry _vn : vicinityNodeList){
-            		if(_pn.nodeAdress == _vn.nodeAdress && _vn.nodeStatus != "DEAD"){
-            			if (_vn.nodeStatus != _pn.nodeStatus){
-            				_vn.nodeStatus = _pn.nodeStatus;
-	            			if(_pn.nodeStatus == "LIVE"){	            				
-	            				_vn.waitingForPong = false;
-	                			_vn.waitingForPongCount = 0;
-	            			}else if(_pn.nodeStatus == "SUSPECTED"){	            				
-	            				_vn.waitingForPong = true;                			
-	            			}
-            			}
-            		}
-            	}            	
-            }
-            */
+           
             
             
         }
@@ -524,10 +438,17 @@ public class SwimComp extends ComponentDefinition {
         	
             log.info("{} received 2nd-hand-ping from:{} with caller {} ", new Object[]{selfAddress.getId(), event.getHeader().getSource(),event.getContent().GetTestRequesterNode()});
             // ADD PINGER: If the pinger is not in the vicinity-list - add him in the vicinityNodeList and joinedNodeList              
-            if (!vicinityNodeList.contains(event.getHeader().getSource())){
-            	AddUniqueToVicinity(event.getHeader().getSource());
-                AddUniqueToJoinedList(event.getHeader().getSource());
-            }
+//            boolean _found = false;
+//            for(VicinityEntry _v: vicinityNodeList){
+//            	if(_v.nodeAdress.getId() == event.getHeader().getSource().getId())
+//            		_found = true;
+//            }            
+//            if (_found == false){
+//            	AddUniqueToVicinity(event.getHeader().getSource());
+//                AddUniqueToJoinedList(event.getHeader().getSource());
+//            }
+            AddUniqueToVicinity(event.getHeader().getSource());
+            AddUniqueToJoinedList(event.getHeader().getSource());
             
             // MERGE PIGGY-BACKS
             MargeAllPiggyBacks(	event.getContent().getParasitePing().getPiggyBackedSuspectedNodes(), 
@@ -635,9 +556,15 @@ public class SwimComp extends ComponentDefinition {
     // Add to Join-List
     protected void AddUniqueToJoinedList(NatedAddress node) {
 		if (joinedNodeList.size() > 0){
-    		if (!joinedNodeList .contains(node)){
-    			joinedNodeList .addFirst(node);
-    			if(joinedNodeList .size()> DELETE_QUEUE_SIZE)
+			boolean _found = false;
+			for(NatedAddress _j: joinedNodeList){
+				if (_j.getId() == node.getId())
+					_found = true;
+			}
+			
+			if (_found == false){
+    			joinedNodeList.addFirst(node);
+    			if(joinedNodeList.size()> DELETE_QUEUE_SIZE)
     				joinedNodeList.pollLast();
     		}   			    		
     	}else{
@@ -648,10 +575,16 @@ public class SwimComp extends ComponentDefinition {
  // Add to Dead-List
     protected void AddUniqueToDeadList(NatedAddress node) {
 		if (deletedNodeList .size() > 0){
-    		if (!deletedNodeList .contains(node)){
-    			deletedNodeList .addFirst(node);
-    			if(deletedNodeList .size()> JOIN_QUEUE_SIZE)
-    				deletedNodeList .pollLast();
+			boolean _found = false;
+			for(NatedAddress _d: deletedNodeList){
+				if (_d.getId() == node.getId())
+					_found = true;
+			}
+			
+    		if (_found == false){
+    			deletedNodeList.addFirst(node);
+    			if(deletedNodeList.size()> JOIN_QUEUE_SIZE)
+    				deletedNodeList.pollLast();
     		}   			    		
     	}else{
     		deletedNodeList .add(node);
@@ -664,7 +597,7 @@ public class SwimComp extends ComponentDefinition {
     	if (vicinityNodeList.size() > 0){
     		boolean _contains = false;
     		for(VicinityEntry entry : vicinityNodeList){
-    			if (entry.nodeAdress.equals(node))
+    			if (entry.nodeAdress.getId().equals(node.getId()))
     				_contains = true;
     		}
     		if (!_contains )
@@ -681,7 +614,7 @@ public class SwimComp extends ComponentDefinition {
     protected void AddUniqueToSuspectedList(VicinityEntry vNode) {
     	PiggybackEntry _tempEntry = null;
     	for(PiggybackEntry _n : suspectedNodeList){
-			if (_n.nodeAdress == vNode.nodeAdress){
+			if (_n.nodeAdress.getId() == vNode.nodeAdress.getId()){
 				_tempEntry = _n; 
 			}				
 		}
@@ -696,7 +629,9 @@ public class SwimComp extends ComponentDefinition {
     
     // Add to local suspected list from piggyback-suspected-list
     protected void MargeUniqueToSuspectedList(PiggybackEntry suspectedPiggyNode) {
-    	if (suspectedPiggyNode.nodeAdress == selfAddress && suspectedPiggyNode.nodeStatus == "SUSPECTED" && suspectedPiggyNode.incCount == this.incurnationNumber){
+    	if (suspectedPiggyNode.nodeAdress.getId() == selfAddress.getId() 
+    			&& suspectedPiggyNode.nodeStatus == "SUSPECTED" 
+    			&& suspectedPiggyNode.incCount == this.incurnationNumber){
     		this.incurnationNumber ++;
     		suspectedPiggyNode.incCount = this.incurnationNumber;
     		suspectedPiggyNode.nodeStatus = "LIVE";
@@ -706,7 +641,7 @@ public class SwimComp extends ComponentDefinition {
 	    	// Add in the suspected list based on highest incarnation-number
 	    	PiggybackEntry _tempEntry = null;
 	    	for(PiggybackEntry _n : suspectedNodeList){
-				if (_n.nodeAdress == suspectedPiggyNode.nodeAdress){
+				if (_n.nodeAdress.getId() == suspectedPiggyNode.nodeAdress.getId()){
 					_tempEntry = _n; 
 				}				
 			}
@@ -728,7 +663,7 @@ public class SwimComp extends ComponentDefinition {
     	if (vicinityNodeList.size() > 0){
     		VicinityEntry _temp = null;    		
     		for(VicinityEntry entry : vicinityNodeList){
-    			if (entry.nodeAdress.equals(deletedNode)){
+    			if (entry.nodeAdress.getId().equals(deletedNode.getId())){
     				_temp = entry;    				
     			}    			
     		}
@@ -743,7 +678,7 @@ public class SwimComp extends ComponentDefinition {
     	if (suspectedNodeList.size() > 0){
     		PiggybackEntry _temp = null;    		
     		for(PiggybackEntry entry : suspectedNodeList){
-    			if (entry.nodeAdress.equals(deletedNode)){
+    			if (entry.nodeAdress.getId().equals(deletedNode.getId())){
     				_temp = entry;    				
     			}    			
     		}
@@ -770,7 +705,7 @@ public class SwimComp extends ComponentDefinition {
         // MARGE PIGGY-BACK(JOINED): If the piggy-backed new nodes are not in the vicinityNodeList - add them 
         if (piggyBackedJoinedNodes.size() > 0){
         	for(NatedAddress newPiggyBackedNode : piggyBackedJoinedNodes){
-        		if (newPiggyBackedNode != selfAddress ){
+        		if (newPiggyBackedNode.getId() != selfAddress.getId() ){
         			AddUniqueToVicinity(newPiggyBackedNode);
             		AddUniqueToJoinedList(newPiggyBackedNode);	
         		}            		            		
@@ -780,7 +715,7 @@ public class SwimComp extends ComponentDefinition {
         // MARGE PIGGY-BACK(DEAD): If the piggy-backed dead node are in the vicinityNodeList -  remove them
         if (piggyBackedDeadNodes.size() > 0){
         	for(NatedAddress deadPiggyBackedNode : piggyBackedDeadNodes){
-        		if (deadPiggyBackedNode != selfAddress ){
+        		if (deadPiggyBackedNode.getId() != selfAddress.getId() ){
         			RemoveFromVicinityList(deadPiggyBackedNode);
         			AddUniqueToDeadList(deadPiggyBackedNode);
         			RemoveFromsuspectedNodeList(deadPiggyBackedNode);
@@ -791,10 +726,10 @@ public class SwimComp extends ComponentDefinition {
 
     protected void UpdateVicinityWithPiggybacks(){
     	
-    	// UPDATE-VIEW: Update the vicinity node info according to the piggyback node info 
+    	// UPDATE-VIEW: Update the vicinity node info according to the piggyback(SuspectedList) node info 
         for (PiggybackEntry _pn : suspectedNodeList){
         	for (VicinityEntry _vn : vicinityNodeList){
-        		if(_pn.nodeAdress == _vn.nodeAdress && _vn.nodeStatus != "DEAD"){
+        		if(_pn.nodeAdress.getId() == _vn.nodeAdress.getId() && _vn.nodeStatus != "DEAD"){
         			if (_vn.nodeStatus != _pn.nodeStatus){
         				_vn.nodeStatus = _pn.nodeStatus;
             			if(_pn.nodeStatus == "LIVE"){	            				
@@ -859,7 +794,7 @@ public class SwimComp extends ComponentDefinition {
     	
 	    	// Mark the node as waiting for ping in vicinity list
 		    for (VicinityEntry partner : vicinityNodeList){
-		      	if (partner.nodeAdress == pingPartner)
+		      	if (partner.nodeAdress.getId() == pingPartner.getId())
 		      		partner.waitingForPong = true;
       }	
     }
