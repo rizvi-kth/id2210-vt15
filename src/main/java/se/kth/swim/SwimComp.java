@@ -710,21 +710,35 @@ public class SwimComp extends ComponentDefinition {
     	
     	// UPDATE-VIEW: Update the vicinity node info according to the piggyback(SuspectedList) node info 
         for (PiggybackEntry _pn : suspectedNodeList){
-        	for (VicinityEntry _vn : vicinityNodeList){
-        		if(_pn.nodeAdress.getId() == _vn.nodeAdress.getId() && _vn.nodeStatus != "DEAD"){
-        			if (_vn.nodeStatus != _pn.nodeStatus){
-        				_vn.nodeStatus = _pn.nodeStatus;
-            			if(_pn.nodeStatus == "LIVE"){	            				
-            				_vn.waitingForPong = false;
-                			_vn.waitingForPongCount = 0;
-            			}else if(_pn.nodeStatus == "SUSPECTED"){	            				
-            				_vn.waitingForPong = true;                			
-            			}
-        			}
-        		}
-        	}
-        	
-        }
+	         
+	        	boolean _found = false;
+	        	for (VicinityEntry _vn : vicinityNodeList){
+	        		if(_pn.nodeAdress.getId() == _vn.nodeAdress.getId() ){
+	        			_found = true;
+	        			if (_vn.nodeStatus != "DEAD"){        			
+		        			if (_vn.nodeStatus != _pn.nodeStatus){
+		        				_vn.nodeStatus = _pn.nodeStatus;
+		            			if(_pn.nodeStatus == "LIVE"){	            				
+		            				_vn.waitingForPong = false;
+		                			_vn.waitingForPongCount = 0;
+		            			}else if(_pn.nodeStatus == "SUSPECTED"){	            				
+		            				_vn.waitingForPong = true;                			
+		            			}
+		        			}
+	        			}
+	        		}        		
+	        	}
+	        	if (_found == false)
+	            {   
+	        		if (_pn.nodeAdress.getId() != selfAddress.getId()){
+		        		VicinityEntry _newEntry = new VicinityEntry(_pn.nodeAdress);
+		        		_newEntry.nodeStatus = _pn.nodeStatus;        		
+		        		vicinityNodeList.add(_newEntry);
+	        		}
+	            }
+	        }
+        
+        
     	
     	
     }
