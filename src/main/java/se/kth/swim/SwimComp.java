@@ -96,11 +96,13 @@ public class SwimComp extends ComponentDefinition {
     private int receivedPongs = 0;
     
     private int incurnationNumber = 0;
+    private int NatIncurnationNr = 0;
     
     private List<VicinityEntry> vicinityNodeList = new ArrayList<VicinityEntry>();
     private Deque<NatedAddress> joinedNodeList = new LinkedList<NatedAddress>();
     private Deque<NatedAddress> deletedNodeList = new LinkedList<NatedAddress>();
     private Set<PiggybackEntry> suspectedNodeList = new HashSet<PiggybackEntry>();
+    private Set<NatEntity> newNATlist = new HashSet<NatEntity>();
     
     
     private int JOIN_QUEUE_SIZE = 5;
@@ -139,6 +141,14 @@ public class SwimComp extends ComponentDefinition {
         @Override
         public void handle(NatNotify event) {
             log.info("{} got Old Parents {} and New Parents {}", new Object[]{selfAddress,selfAddress.getParents(), event.getChangedNatAddress().getParents() });            
+            NatIncurnationNr ++;
+            selfAddress = event.getChangedNatAddress();
+            AddUniqueToNewNATlist(selfAddress, NatIncurnationNr);
+            log.info("{} got in newNATList " + ProcessSet(newNATlist), new Object[]{selfAddress});            
+            
+            // TODO
+            
+            
         }
 
     };
@@ -482,7 +492,6 @@ public class SwimComp extends ComponentDefinition {
         trigger(spt, timer);
     }
 	
-	
 	private void cancelPeriodicPing() {
         CancelTimeout cpt = new CancelTimeout(pingTimeoutId);
         trigger(cpt, timer);
@@ -534,6 +543,23 @@ public class SwimComp extends ComponentDefinition {
     }
     
     // -- Rizvi 
+    
+    protected void AddUniqueToNewNATlist(NatedAddress newNatAddress, int incNr) {
+    	boolean _found = false;
+		for(NatEntity _n: newNATlist){
+			if (_n.nodeAdress.getId() == newNatAddress.getId()){
+				_found = true;
+				_n.nodeAdress = newNatAddress;
+				_n.incurnationNumber = incNr;
+			}
+		}
+		if (_found == false){
+			NatEntity _e = new NatEntity(newNatAddress);
+			_e.incurnationNumber = incNr;
+			newNATlist.add(_e);
+		}
+		
+	}
     
     // Add to Join-List
     protected void AddUniqueToJoinedList(NatedAddress node) {
@@ -743,6 +769,17 @@ public class SwimComp extends ComponentDefinition {
     	
     }
     
+    public String ProcessSet(Set<NatEntity> nList)
+    {
+    	String st = " [";    	
+    	for(NatEntity nd : nList){
+    		String stat = "";
+    		stat = " " + nd.nodeAdress.getId() + "-P"+ nd.nodeAdress.getParents().size() + "-" + nd.incurnationNumber;    		
+    		st += stat;
+    	}
+    	return st + "]";
+    	
+    }
     
     public String ProcessSet(Deque<NatedAddress> vList)
     {
