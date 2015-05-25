@@ -203,15 +203,6 @@ public class SwimComp extends ComponentDefinition {
             receivedPings++;
             
             // ADD PINGER: If the pinger is not in the vicinity-list - add him in the vicinityNodeList and joinedNodeList              
-//            boolean _found = false;
-//            for(VicinityEntry _v: vicinityNodeList){
-//            	if(_v.nodeAdress.getId() == event.getHeader().getSource().getId())
-//            		_found = true;
-//            }           
-//            if (_found == false){
-//            	AddUniqueToVicinity(event.getHeader().getSource());
-//                AddUniqueToJoinedList(event.getHeader().getSource());
-//            }
         	  AddUniqueToVicinity(event.getHeader().getSource());
               AddUniqueToJoinedList(event.getHeader().getSource());
         
@@ -438,15 +429,6 @@ public class SwimComp extends ComponentDefinition {
         	
             log.info("{} received 2nd-hand-ping from:{} with caller {} ", new Object[]{selfAddress.getId(), event.getHeader().getSource(),event.getContent().GetTestRequesterNode()});
             // ADD PINGER: If the pinger is not in the vicinity-list - add him in the vicinityNodeList and joinedNodeList              
-//            boolean _found = false;
-//            for(VicinityEntry _v: vicinityNodeList){
-//            	if(_v.nodeAdress.getId() == event.getHeader().getSource().getId())
-//            		_found = true;
-//            }            
-//            if (_found == false){
-//            	AddUniqueToVicinity(event.getHeader().getSource());
-//                AddUniqueToJoinedList(event.getHeader().getSource());
-//            }
             AddUniqueToVicinity(event.getHeader().getSource());
             AddUniqueToJoinedList(event.getHeader().getSource());
             
@@ -486,7 +468,7 @@ public class SwimComp extends ComponentDefinition {
         @Override
         public void handle(StatusTimeout event) {
             //log.info("{} sending status to aggregator:{}", new Object[]{selfAddress.getId(), aggregatorAddress});
-            trigger(new NetStatus(selfAddress, aggregatorAddress, new Status(sentPings,receivedPings, receivedPongs, vicinityNodeList)), network);
+            trigger(new NetStatus(selfAddress, aggregatorAddress, new Status(sentPings,receivedPings, receivedPongs, vicinityNodeList,joinedNodeList, deletedNodeList, suspectedNodeList )), network);
         }
     };
 

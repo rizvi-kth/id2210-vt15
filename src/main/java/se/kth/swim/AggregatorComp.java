@@ -18,7 +18,9 @@
  */
 package se.kth.swim;
 
+import java.util.Deque;
 import java.util.List;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,13 +79,23 @@ public class AggregatorComp extends ComponentDefinition {
         public void handle(NetStatus status) {
         	// -- Riz
        	 
-        	//if(status.getHeader().getSource().getId()== 10)  // <<<--- To watch only node 10's convergence   
-        		log.info("{} status from:{} - Sent Pings:{} ,Received Pongs:{}, with vicinity of {} nodes: " + ProcessViciniTyList(status.getContent().vicinityNodeList) , 
-                      new Object[]{selfAddress.getId(),         			
-              					 status.getHeader().getSource(), 
-              					 status.getContent().sentPings, status.getContent().receivedPongs,
-              					 status.getContent().vicinityNodeList.size()}
-        				);
+        	//if(status.getHeader().getSource().getId()== 10)  // <<<--- To watch only node 10's convergence
+        	log.info("Status from:{} - Vicinity of {} nodes:[" 
+        								+ ProcessViciniTyList(status.getContent().vicinityNodeList) + "] dead" 
+        								+ ProcessSet(status.getContent().deletedNodeList) + "  joined" 
+        							    + ProcessSet(status.getContent().joinedNodeList) +  "  suspect [ " 
+        							    + ProcessPiggyEntitySet(status.getContent().suspectedNodeList) + " ].", 
+                    new Object[]{status.getHeader().getSource(),            					 
+            					 status.getContent().vicinityNodeList.size()}
+      				);
+        	
+        	
+//        		log.info("{} status from:{} - Sent Pings:{} ,Received Pongs:{}, with vicinity of {} nodes: " + ProcessViciniTyList(status.getContent().vicinityNodeList) , 
+//                      new Object[]{selfAddress.getId(),         			
+//              					 status.getHeader().getSource(), 
+//              					 status.getContent().sentPings, status.getContent().receivedPongs,
+//              					 status.getContent().vicinityNodeList.size()}
+//        				);
 //            log.info("{} status from:{} - Received Pings:{} ,Received Pongs:{}, with vicinity of nodes:" + ProcessViciniTyList(status.getContent().vicinityNodeList), 
 //                    new Object[]{selfAddress.getId(), 
 //            					 status.getHeader().getSource(), 
@@ -103,6 +115,29 @@ public class AggregatorComp extends ComponentDefinition {
     }
     
  // -- Riz
+    
+    public String ProcessSet(Deque<NatedAddress> vList)
+    {
+    	String st = " ";    	
+    	for(NatedAddress nd : vList){
+    		
+    		st += nd.getId() + " ";
+    	}
+    	st = "[" + st + "]"; 
+    	return st;
+    	    	
+    }
+    
+    public String ProcessPiggyEntitySet(Set<PiggybackEntry> piggyBackedSuspectedNodes) {
+    	String st = "";    	
+    	for(PiggybackEntry nd : piggyBackedSuspectedNodes){
+    		String stat = "";
+    		stat = " " + nd.nodeAdress.getId() + "-"+ nd.nodeStatus + "-" + nd.incCount;    		
+    		st += stat;
+    	}
+    	return st;
+	}
+    
     public String ProcessViciniTyList(List<VicinityEntry> vList)
     {
     	String st = " ";    	
