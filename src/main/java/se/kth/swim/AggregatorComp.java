@@ -84,7 +84,8 @@ public class AggregatorComp extends ComponentDefinition {
         								+ ProcessViciniTyList(status.getContent().vicinityNodeList) + "] dead" 
         								+ ProcessSet(status.getContent().deletedNodeList) + "  joined" 
         							    + ProcessSet(status.getContent().joinedNodeList) +  "  suspect [ " 
-        							    + ProcessPiggyEntitySet(status.getContent().suspectedNodeList) + " ].", 
+        							    + ProcessPiggyEntitySet(status.getContent().suspectedNodeList) + " ] newNats"
+        							    + ProcessSet(status.getContent().newNATList), 
                     new Object[]{status.getHeader().getSource(),            					 
             					 status.getContent().vicinityNodeList.size()}
       				);
@@ -115,6 +116,19 @@ public class AggregatorComp extends ComponentDefinition {
     }
     
  // -- Riz
+
+    public String ProcessSet(Set<NatEntity> nList)
+    {
+    	String st = " [";    	
+    	for(NatEntity nd : nList){
+    		String stat = "";
+    		stat = " " + nd.nodeAdress.getId() + "-P"+ nd.nodeAdress.getParents().size() + "-" + nd.incurnationNumber;    		
+    		st += stat;
+    	}
+    	return st + "]";
+    	
+    }
+    
     
     public String ProcessSet(Deque<NatedAddress> vList)
     {

@@ -3,6 +3,7 @@ package se.kth.swim.msg;
 import java.util.Deque;
 import java.util.Set;
 
+import se.kth.swim.NatEntity;
 import se.kth.swim.PiggybackEntry;
 import se.sics.p2ptoolbox.util.network.NatedAddress;
 
@@ -12,17 +13,22 @@ public class Pong {
 
 			private Deque<NatedAddress> piggyBackedJoinedNodes = null;
 			private Deque<NatedAddress> piggyBackedDeadNodes = null;
-			private Set<PiggybackEntry> piggyBackedSuspectedNodes = null;			
+			private Set<PiggybackEntry> piggyBackedSuspectedNodes = null;
+			private Set<NatEntity> piggyBackedNATEntities = null;
 								
 			
 			public Pong()
 			{}
 			
-			public Pong(Deque<NatedAddress> p_piggyBackedJoinedNodes,Deque<NatedAddress> p_piggyBackedDeadNodes,Set<PiggybackEntry> p_piggyBackedSuspectedNodes)
+			public Pong(Deque<NatedAddress> p_piggyBackedJoinedNodes,
+						Deque<NatedAddress> p_piggyBackedDeadNodes,
+						Set<PiggybackEntry> p_piggyBackedSuspectedNodes,
+						Set<NatEntity> p_piggyBackedNATEntities)
 			{
 				piggyBackedJoinedNodes= p_piggyBackedJoinedNodes;
 				piggyBackedDeadNodes= p_piggyBackedDeadNodes;			
-				piggyBackedSuspectedNodes = p_piggyBackedSuspectedNodes; 
+				piggyBackedSuspectedNodes = p_piggyBackedSuspectedNodes;
+				piggyBackedNATEntities = p_piggyBackedNATEntities;
 			}
 			
 			public Deque<NatedAddress> getPiggyBackedJoinedNodes() {
@@ -35,6 +41,10 @@ public class Pong {
 			
 			public Set<PiggybackEntry> getPiggyBackedSuspectedNodes() {
 				return piggyBackedSuspectedNodes;
+			}
+
+			public Set<NatEntity> getPiggyBackedNATEntities() {
+				return piggyBackedNATEntities;
 			}
 
 

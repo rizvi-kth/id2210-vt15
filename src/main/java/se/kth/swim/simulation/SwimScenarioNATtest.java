@@ -267,7 +267,7 @@ public class SwimScenarioNATtest {
                 StochasticProcess startPeers = new StochasticProcess() {
                     {
                         eventInterArrivalTime(constant(1000));                       
-                        Integer[] _nodes = new Integer[]{10,16,20,22,21,30,32,39,40};
+                        Integer[] _nodes = new Integer[]{10,16,21,30,32,39,40,};
                         raise(_nodes.length, startNodeOp, new GenIntSequentialDistribution(_nodes));
                         
 //                        raise(9, startNodeOp, new GenIntSequentialDistribution(new Integer[]{10,16,20,22,24,26,28,30,32}));
@@ -287,7 +287,7 @@ public class SwimScenarioNATtest {
                     {
                         eventInterArrivalTime(constant(1000));
                         raise(1, killNodeOp, new ConstantDistribution(Integer.class, 10));
-                        raise(1, killNodeOp, new ConstantDistribution(Integer.class, 16));
+//                        raise(1, killNodeOp, new ConstantDistribution(Integer.class, 16));
                         
                     }
                 };

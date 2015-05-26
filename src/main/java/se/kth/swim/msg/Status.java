@@ -25,6 +25,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
+import se.kth.swim.NatEntity;
 import se.kth.swim.PiggybackEntry;
 import se.kth.swim.VicinityEntry;
 import se.sics.p2ptoolbox.util.network.NatedAddress;
@@ -42,6 +43,7 @@ public class Status {
     public Deque<NatedAddress> joinedNodeList ;
     public Deque<NatedAddress> deletedNodeList ;
     public Set<PiggybackEntry> suspectedNodeList ;
+    public Set<NatEntity> newNATList ;
     
     
     // --
@@ -49,7 +51,8 @@ public class Status {
     public Status(int sentPings,int receivedPings, int receivedPongs, List<VicinityEntry> vicinityNodeList,
     		Deque<NatedAddress> joinedNodeList,
     		Deque<NatedAddress> deletedNodeList,
-    		Set<PiggybackEntry> suspectedNodeList) {
+    		Set<PiggybackEntry> suspectedNodeList,
+    		Set<NatEntity> newNATList) {
         this.receivedPings = receivedPings;
         // -- Riz
         this.sentPings = sentPings;        
@@ -58,7 +61,7 @@ public class Status {
         this.joinedNodeList = joinedNodeList;
         this.deletedNodeList = deletedNodeList;
         this.suspectedNodeList = suspectedNodeList;
-        
+        this.newNATList = newNATList;
         // --
         
     }
