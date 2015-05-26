@@ -267,17 +267,19 @@ public class SwimScenario {
                 StochasticProcess startPeers = new StochasticProcess() {
                     {
                     	
-//                    	int total_nodes=20;
-//                    	int start_id, node_count=0;
-//                    	Integer[] nodeIdList = new Integer[total_nodes];                      
-//                        for (start_id=2; node_count<total_nodes; node_count++,start_id+=2)
-//                        	nodeIdList[node_count] = start_id;
-//                                              
+                    	int total_nodes=100;
+                    	int start_id, node_count=0;
+                    	Integer[] nodeIdList = new Integer[total_nodes];                      
+                        for (start_id=2; node_count<total_nodes; node_count++,start_id+=2)
+                        	nodeIdList[node_count] = start_id;
+                                              
                         eventInterArrivalTime(constant(1000));                      
-                        raise(10, startNodeOp, new GenIntSequentialDistribution(new Integer[]{10,16,20,22,24
-                        																	,26,28,30,32,36
-                        																	}));
-//                        raise(nodeIdList, startNodeOp, new GenIntSequentialDistribution(nodeIdList));
+//                        raise(20, startNodeOp, new GenIntSequentialDistribution(new Integer[]{10,16,20,22,24
+//                        																	   ,26,28,30,32,36
+//                        																	   ,38,40,42,44,46
+//                        																	   ,48,50,52,54,56
+//                        																	   }));
+                        raise(nodeIdList.length, startNodeOp, new GenIntSequentialDistribution(nodeIdList));
                         
                         
                     }
@@ -335,7 +337,7 @@ public class SwimScenario {
 //                disconnectedNodes1.startAfterTerminationOf(10000, deadLinks1);
 //                joinPeers.startAfterStartOf(10000, deadLinks1);
 //                reincurnate.startAfterTerminationOf(10000, joinPeers);               
-//                killPeers.startAfterTerminationOf(5*10000, joinPeers);
+                killPeers.startAfterTerminationOf(1*10000, startPeers);
                 
                 fetchSimulationResult.startAfterTerminationOf(90*10000, startPeers);
                 terminateAfterTerminationOf(60*1000, fetchSimulationResult);

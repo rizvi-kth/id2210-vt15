@@ -33,6 +33,8 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.ArrayListMultimap;
+
 import se.kth.swim.croupier.CroupierPort;
 import se.kth.swim.msg.Ping;
 import se.kth.swim.msg.Ping2ndHand;
@@ -106,7 +108,7 @@ public class SwimComp extends ComponentDefinition {
     private Set<NatEntity> newNATList = new HashSet<NatEntity>();
     
     
-    private int JOIN_QUEUE_SIZE = 5;
+    private int JOIN_QUEUE_SIZE = 10;
     private int DELETE_QUEUE_SIZE = 5;
     private int PING_REQ_RANDOM_K = 2;    
     //--    
@@ -640,8 +642,7 @@ public class SwimComp extends ComponentDefinition {
     	}		
 	}
     
-    // Add to local NewNATList from the piggybacked-NewNAT-list
-    // TODO
+    // Add to local NewNATList from the piggybacked-NewNAT-list    
     protected void MargeUniqueToNewNATList(NatEntity NewNATPiggyNode) {
     	if (NewNATPiggyNode.nodeAdress.getId() == selfAddress.getId()){
     		
@@ -744,7 +745,9 @@ public class SwimComp extends ComponentDefinition {
         
         // MARGE PIGGY-BACK(JOINED): If the piggy-backed new nodes are not in the vicinityNodeList - add them 
 //        if (piggyBackedJoinedNodes.size() > 0){
-        	for(NatedAddress newPiggyBackedNode : piggyBackedJoinedNodes){
+        	        	
+        	ArrayList<NatedAddress> _piggyBackedJoinedNodes = new ArrayList<NatedAddress>(piggyBackedJoinedNodes);
+        	for(NatedAddress newPiggyBackedNode : _piggyBackedJoinedNodes){
         		if (newPiggyBackedNode.getId() != selfAddress.getId() ){
         			AddUniqueToVicinity(newPiggyBackedNode);
             		AddUniqueToJoinedList(newPiggyBackedNode);	
