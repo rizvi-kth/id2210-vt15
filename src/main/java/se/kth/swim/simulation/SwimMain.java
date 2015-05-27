@@ -43,8 +43,10 @@ public class SwimMain {
          * When testing you code, you might want to run the scenario with different seeds.
          */
         
-        LauncherComp.scenario = SwimScenario.simpleBoot(1234L);
+//        LauncherComp.scenario = SwimScenario.simpleBoot(1234L);
+        LauncherComp.scenario = SwimScenarioP2T1.simpleBoot(1234L);
 //        LauncherComp.scenario = SwimScenarioNATtest.simpleBoot(1234L);
+        
         //
         try {
             LauncherComp.simulatorClientAddress = new BasicNatedAddress(new BasicAddress(InetAddress.getByName("127.0.0.1"), 30000, -1));

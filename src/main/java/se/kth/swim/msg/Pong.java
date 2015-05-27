@@ -15,10 +15,16 @@ public class Pong {
 			private Deque<NatedAddress> piggyBackedDeadNodes = null;
 			private Set<PiggybackEntry> piggyBackedSuspectedNodes = null;
 			private Set<NatEntity> piggyBackedNATEntities = null;
+			private String heartBeatType = null; // HB (HeartBeat) or CB (CroupierBeat) 
 								
 			
 			public Pong()
 			{}
+			
+			public Pong(String p_heartBeatType)
+			{
+				heartBeatType = p_heartBeatType;		
+			}
 			
 			public Pong(Deque<NatedAddress> p_piggyBackedJoinedNodes,
 						Deque<NatedAddress> p_piggyBackedDeadNodes,
@@ -46,6 +52,11 @@ public class Pong {
 			public Set<NatEntity> getPiggyBackedNATEntities() {
 				return piggyBackedNATEntities;
 			}
+			
+			public String getHeartBeatType() {
+				return heartBeatType;
+			}
+
 
 
 

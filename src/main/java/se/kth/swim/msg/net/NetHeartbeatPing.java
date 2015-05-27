@@ -31,6 +31,10 @@ public class NetHeartbeatPing extends NetMsg<Ping> {
         super(src, dst, new Ping());
     }
 
+    public NetHeartbeatPing(NatedAddress src, NatedAddress dst,Ping content) {
+        super(src, dst, content);
+    }
+    
     private NetHeartbeatPing(Header<NatedAddress> header, Ping content) {
         super(header, content);
     }

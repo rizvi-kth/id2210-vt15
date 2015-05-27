@@ -35,11 +35,18 @@ public class Ping {
 	private Deque<NatedAddress> piggyBackedDeadNodes = null;
 	private Set<PiggybackEntry> piggyBackedSuspectedNodes = null;
 	private Set<NatEntity> piggyBackedNATEntities = null;
+	private String heartBeatType = null; // HB (HeartBeat) or CB (CroupierBeat) 
 	
-	
+		
 
 	public Ping()
 	{}
+	
+	public Ping(String p_heartBeatType)
+	{
+		heartBeatType = p_heartBeatType;		
+	}
+	
 	
 	public Ping(Deque<NatedAddress> p_piggyBackedJoinedNodes,
 				Deque<NatedAddress> p_piggyBackedDeadNodes,
@@ -66,6 +73,10 @@ public class Ping {
 	
 	public Set<NatEntity> getPiggyBackedNATEntities() {
 		return piggyBackedNATEntities;
+	}
+	
+	public String getHeartBeatType() {
+		return heartBeatType;
 	}
 
 	

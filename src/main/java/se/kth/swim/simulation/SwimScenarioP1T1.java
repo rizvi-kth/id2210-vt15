@@ -52,7 +52,7 @@ import se.sics.p2ptoolbox.util.network.impl.BasicNatedAddress;
  * @author Alex Ormenisan <aaor@sics.se>
  * @author Md. Rizvi Hasan <mrhasan@kth.se>
  */
-public class SwimScenarioNATtest {
+public class SwimScenarioP1T1 {
 
     private static long seed;
     private static InetAddress localHost;
@@ -254,7 +254,7 @@ public class SwimScenarioNATtest {
     //check se.sics.p2ptoolbox.simulator.dsl.distribution for more distributions
     //you can implement your own - by extending Distribution
     public static SimulationScenario simpleBoot(final long seed) {
-        SwimScenarioNATtest.seed = seed;
+        SwimScenarioP1T1.seed = seed;
         SimulationScenario scen = new SimulationScenario() {
             {
                 StochasticProcess startAggregator = new StochasticProcess() {
@@ -266,11 +266,22 @@ public class SwimScenarioNATtest {
 
                 StochasticProcess startPeers = new StochasticProcess() {
                     {
-                        eventInterArrivalTime(constant(1000));                       
-                        Integer[] _nodes = new Integer[]{10,21,16,30,32,39,40,};
-                        raise(_nodes.length, startNodeOp, new GenIntSequentialDistribution(_nodes));
+                    	
+                    	int total_nodes=100;
+                    	int start_id, node_count=0;
+                    	Integer[] nodeIdList = new Integer[total_nodes];                      
+                        for (start_id=2; node_count<total_nodes; node_count++,start_id+=2)
+                        	nodeIdList[node_count] = start_id;
+                                              
+                        eventInterArrivalTime(constant(1000));                      
+//                        raise(20, startNodeOp, new GenIntSequentialDistribution(new Integer[]{10,16,20,22,24
+//                        																	   ,26,28,30,32,36
+//                        																	   ,38,40,42,44,46
+//                        																	   ,48,50,52,54,56
+//                        																	   }));
+                        raise(nodeIdList.length, startNodeOp, new GenIntSequentialDistribution(nodeIdList));
                         
-
+                        
                     }
                 };
                 
@@ -286,8 +297,8 @@ public class SwimScenarioNATtest {
                 StochasticProcess killPeers = new StochasticProcess() {
                     {
                         eventInterArrivalTime(constant(1000));
-                        raise(1, killNodeOp, new ConstantDistribution(Integer.class, 10));
-//                        raise(1, killNodeOp, new ConstantDistribution(Integer.class, 16));
+                        raise(1, killNodeOp, new ConstantDistribution(Integer.class, 18));
+                        raise(1, killNodeOp, new ConstantDistribution(Integer.class, 20));
                         
                     }
                 };
@@ -322,13 +333,13 @@ public class SwimScenarioNATtest {
 
                 startAggregator.start();
                 startPeers.startAfterTerminationOf(1000, startAggregator);
-                deadLinks1.startAfterTerminationOf(10000,startPeers);
+//                deadLinks1.startAfterTerminationOf(10000,startPeers);
 //                disconnectedNodes1.startAfterTerminationOf(10000, deadLinks1);
 //                joinPeers.startAfterStartOf(10000, deadLinks1);
 //                reincurnate.startAfterTerminationOf(10000, joinPeers);               
-                killPeers.startAfterTerminationOf(5*10000, deadLinks1);
+                killPeers.startAfterTerminationOf(1*10000, startPeers);
                 
-                fetchSimulationResult.startAfterTerminationOf(90*10000, killPeers);
+                fetchSimulationResult.startAfterTerminationOf(90*10000, startPeers);
                 terminateAfterTerminationOf(60*1000, fetchSimulationResult);
 
             }

@@ -14,6 +14,7 @@ public class ParentEntry {
 	public boolean waitingForPong = false;
 	public int waitingForPongCount = 0;
 	public int incurnationNumber = 0;
+//	public boolean isHB = true;
 	//public String nodeStatus = "LIVE"; // LIVE - SUSPECTED - DEAD 
 	
 	
