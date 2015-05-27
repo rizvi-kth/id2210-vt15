@@ -44,7 +44,8 @@ public class SwimMain {
          */
         
 //        LauncherComp.scenario = SwimScenario.simpleBoot(1234L);
-        LauncherComp.scenario = SwimScenarioP2T1.simpleBoot(1234L);
+        LauncherComp.scenario = SwimScenarioP1T1.simpleBoot(1234L);
+//        LauncherComp.scenario = SwimScenarioP2T1.simpleBoot(1234L);
 //        LauncherComp.scenario = SwimScenarioNATtest.simpleBoot(1234L);
         
         //

@@ -108,7 +108,7 @@ public class SwimComp extends ComponentDefinition {
     private Set<NatEntity> newNATList = new HashSet<NatEntity>();
     
     
-    private int JOIN_QUEUE_SIZE = 10;
+    private int JOIN_QUEUE_SIZE = 201;
     private int DELETE_QUEUE_SIZE = 5;
     private int PING_REQ_RANDOM_K = 2;    
     //--    
@@ -579,7 +579,7 @@ public class SwimComp extends ComponentDefinition {
 			
 			if (_found == false){
     			joinedNodeList.addFirst(node);
-    			if(joinedNodeList.size()> DELETE_QUEUE_SIZE)
+    			if(joinedNodeList.size()> JOIN_QUEUE_SIZE )
     				joinedNodeList.pollLast();
     		}   			    		
     	}else{
@@ -598,7 +598,7 @@ public class SwimComp extends ComponentDefinition {
 			
     		if (_found == false){
     			deletedNodeList.addFirst(node);
-    			if(deletedNodeList.size()> JOIN_QUEUE_SIZE)
+    			if(deletedNodeList.size()> DELETE_QUEUE_SIZE)
     				deletedNodeList.pollLast();
     		}   			    		
     	}else{
