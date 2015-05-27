@@ -108,8 +108,8 @@ public class SwimComp extends ComponentDefinition {
     private Set<NatEntity> newNATList = new HashSet<NatEntity>();
     
     
-    private int JOIN_QUEUE_SIZE = 201;
-    private int DELETE_QUEUE_SIZE = 5;
+    private int JOIN_QUEUE_SIZE = 100;
+    private int DELETE_QUEUE_SIZE = 50;
     private int PING_REQ_RANDOM_K = 2;    
     //--    
 
@@ -379,7 +379,8 @@ public class SwimComp extends ComponentDefinition {
         		}
         		// Pick a random element to ping
         		else{
-        			goPingTheNode(randomNode(_pingCandidates));
+        			//goPingTheNode(randomNode(_pingCandidates));
+        			goPingTheNode(SequentialNode(_pingCandidates));
         		}        		
         	}
             //--
@@ -908,6 +909,30 @@ public class SwimComp extends ComponentDefinition {
         return it.next();
     }
     
+    private int SequentialPingPointer = 0;
+    private NatedAddress SequentialNode(Set<NatedAddress> nodes) {
+    	if (SequentialPingPointer >= nodes.size()){
+    		SequentialPingPointer = 0;
+    	}    		
+    	
+    	int _i=0;
+    	NatedAddress _pick= null;
+    	for(NatedAddress _n: nodes){
+    		if (_i == SequentialPingPointer)
+    			_pick = _n;
+    		_i++;
+    	}
+    	SequentialPingPointer++;
+    	return _pick;
+    	
+//        int index = SequentialPingPointer-1;
+//        Iterator<NatedAddress> it = nodes.iterator();
+//        while(index > 0) {
+//            it.next();
+//            index--;
+//        }
+//        return it.next();
+    }
 
     // --
 }

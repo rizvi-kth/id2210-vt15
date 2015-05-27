@@ -267,7 +267,7 @@ public class SwimScenarioP1T1 {
                 StochasticProcess startPeers = new StochasticProcess() {
                     {
                     	
-                    	int total_nodes=200;
+                    	int total_nodes=100;
                     	int start_id, node_count=0;
                     	Integer[] nodeIdList = new Integer[total_nodes];                      
                         for (start_id=2; node_count<total_nodes; node_count++,start_id+=2)
@@ -340,7 +340,7 @@ public class SwimScenarioP1T1 {
 //                killPeers.startAfterTerminationOf(1*10000, startPeers);
                 
                 fetchSimulationResult.startAfterTerminationOf(90*10000, startPeers);
-                terminateAfterTerminationOf(60*1000, fetchSimulationResult);
+                terminateAfterTerminationOf(90*1000, fetchSimulationResult);
 
             }
         };
