@@ -54,7 +54,7 @@ import se.sics.p2ptoolbox.util.network.impl.BasicNatedAddress;
  * @author Alex Ormenisan <aaor@sics.se>
  * @author Md. Rizvi Hasan <mrhasan@kth.se>
  */
-public class SwimScenarioP2T1 {
+public class SwimScenarioP2T3 {
 
     private static long seed;
     private static InetAddress localHost;
@@ -256,7 +256,7 @@ public class SwimScenarioP2T1 {
     //check se.sics.p2ptoolbox.simulator.dsl.distribution for more distributions
     //you can implement your own - by extending Distribution
     public static SimulationScenario simpleBoot(final long seed) {
-        SwimScenarioP2T1.seed = seed;
+        SwimScenarioP2T3.seed = seed;
         SimulationScenario scen = new SimulationScenario() {
             {
                 StochasticProcess startAggregator = new StochasticProcess() {

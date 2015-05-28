@@ -83,26 +83,27 @@ public class AggregatorComp extends ComponentDefinition {
         public void handle(NetStatus status) {
         	// -- Riz
        	 
-        	if(status.getContent().deletedNodeList.size()>=10)
-                
-        	{ 
-        	        
-	        	if(!convergedNodes.contains(status.getHeader().getSource().getId()))
-	        	        
-	        	{ 
-	        		convergedNodes.add(status.getHeader().getSource().getId());
+//        	if(status.getContent().deletedNodeList.size()>=5)
+//                
+//        	{ 
+//        	        
+//	        	if(!convergedNodes.contains(status.getHeader().getSource().getId()))
+//	        	        
+//	        	{ 
+//	        		convergedNodes.add(status.getHeader().getSource().getId());
 		        	//if(status.getHeader().getSource().getId()== 10)  // <<<--- To watch only node 10's convergence
 		        	log.info("Status from:{} - Vicinity of {} nodes:[" 
 		        								+ ProcessViciniTyList(status.getContent().vicinityNodeList) + "] dead" 
 		        								+ ProcessSet(status.getContent().deletedNodeList) + "  joined" 
 		        							    + ProcessSet(status.getContent().joinedNodeList) +  "  suspect [ " 
-		        							    + ProcessPiggyEntitySet(status.getContent().suspectedNodeList) + " ] newNats"
+		        							    + ProcessPiggyEntitySet(status.getContent().suspectedNodeList) + " ] Parents"
+		        							    + ProcessParents(status.getHeader().getSource().getParents()) + " newNats"
 		        							    + ProcessSet(status.getContent().newNATList), 
 		                    new Object[]{status.getHeader().getSource(),            					 
 		            					 status.getContent().vicinityNodeList.size()}
 		      				);
-		        }
-        	}
+//		        }
+//        	}
         	
 //        		log.info("{} status from:{} - Sent Pings:{} ,Received Pongs:{}, with vicinity of {} nodes: " + ProcessViciniTyList(status.getContent().vicinityNodeList) , 
 //                      new Object[]{selfAddress.getId(),         			
@@ -142,6 +143,18 @@ public class AggregatorComp extends ComponentDefinition {
     	
     }
     
+    
+    public String ProcessParents(Set<NatedAddress> vList)
+    {
+    	String st = " ";    	
+    	for(NatedAddress nd : vList){
+    		
+    		st += nd.getId() + " ";
+    	}
+    	st = "[" + st + "]"; 
+    	return st;
+    	    	
+    }
     
     public String ProcessSet(Deque<NatedAddress> vList)
     {
