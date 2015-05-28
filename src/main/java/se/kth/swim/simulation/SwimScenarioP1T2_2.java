@@ -268,7 +268,7 @@ public class SwimScenarioP1T2_2 {
                     {
                     	
                     	
-                    	int total_nodes=100;
+                    	int total_nodes=70;
                     	int start_id, node_count=0;
                     	Integer[] nodeIdList = new Integer[total_nodes];                      
                         for (start_id=2; node_count<total_nodes; node_count++,start_id+=2)
@@ -294,7 +294,7 @@ public class SwimScenarioP1T2_2 {
                 StochasticProcess killPeers = new StochasticProcess() {
                     {
                         eventInterArrivalTime(constant(1000));
-                        raise(10, killNodeOp, new GenIntSequentialDistribution(new Integer[]{10,20,30,40,50,60,70,80,90,100}));                        
+                        raise(10, killNodeOp, new GenIntSequentialDistribution(new Integer[]{10,20,30,40,50,70,44,22,54,64}));                        
                     }
                 };
 

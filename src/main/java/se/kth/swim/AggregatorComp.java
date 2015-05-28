@@ -18,6 +18,7 @@
  */
 package se.kth.swim;
 
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.Set;
@@ -44,6 +45,9 @@ public class AggregatorComp extends ComponentDefinition {
     private static final Logger log = LoggerFactory.getLogger(AggregatorComp.class);
     private Positive<Network> network = requires(Network.class);
     private Positive<Timer> timer = requires(Timer.class);
+    // --Riz
+    private List<Integer> convergedNodes = new ArrayList<Integer>();
+    // --
 
     private final NatedAddress selfAddress;
 
@@ -79,17 +83,26 @@ public class AggregatorComp extends ComponentDefinition {
         public void handle(NetStatus status) {
         	// -- Riz
        	 
-        	//if(status.getHeader().getSource().getId()== 10)  // <<<--- To watch only node 10's convergence
-        	log.info("Status from:{} - Vicinity of {} nodes:[" 
-        								+ ProcessViciniTyList(status.getContent().vicinityNodeList) + "] dead" 
-        								+ ProcessSet(status.getContent().deletedNodeList) + "  joined" 
-        							    + ProcessSet(status.getContent().joinedNodeList) +  "  suspect [ " 
-        							    + ProcessPiggyEntitySet(status.getContent().suspectedNodeList) + " ] newNats"
-        							    + ProcessSet(status.getContent().newNATList), 
-                    new Object[]{status.getHeader().getSource(),            					 
-            					 status.getContent().vicinityNodeList.size()}
-      				);
-        	
+        	if(status.getContent().deletedNodeList.size()>=10)
+                
+        	{ 
+        	        
+	        	if(!convergedNodes.contains(status.getHeader().getSource().getId()))
+	        	        
+	        	{ 
+	        		convergedNodes.add(status.getHeader().getSource().getId());
+		        	//if(status.getHeader().getSource().getId()== 10)  // <<<--- To watch only node 10's convergence
+		        	log.info("Status from:{} - Vicinity of {} nodes:[" 
+		        								+ ProcessViciniTyList(status.getContent().vicinityNodeList) + "] dead" 
+		        								+ ProcessSet(status.getContent().deletedNodeList) + "  joined" 
+		        							    + ProcessSet(status.getContent().joinedNodeList) +  "  suspect [ " 
+		        							    + ProcessPiggyEntitySet(status.getContent().suspectedNodeList) + " ] newNats"
+		        							    + ProcessSet(status.getContent().newNATList), 
+		                    new Object[]{status.getHeader().getSource(),            					 
+		            					 status.getContent().vicinityNodeList.size()}
+		      				);
+		        }
+        	}
         	
 //        		log.info("{} status from:{} - Sent Pings:{} ,Received Pongs:{}, with vicinity of {} nodes: " + ProcessViciniTyList(status.getContent().vicinityNodeList) , 
 //                      new Object[]{selfAddress.getId(),         			
