@@ -24,7 +24,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+
 import org.javatuples.Pair;
+
 import se.kth.swim.AggregatorComp;
 import se.kth.swim.HostComp;
 import se.kth.swim.croupier.CroupierConfig;
@@ -42,6 +44,7 @@ import se.sics.p2ptoolbox.simulator.dsl.SimulationScenario;
 import se.sics.p2ptoolbox.simulator.dsl.adaptor.Operation;
 import se.sics.p2ptoolbox.simulator.dsl.adaptor.Operation1;
 import se.sics.p2ptoolbox.simulator.dsl.distribution.ConstantDistribution;
+import se.sics.p2ptoolbox.simulator.dsl.distribution.extra.BasicIntSequentialDistribution;
 import se.sics.p2ptoolbox.simulator.dsl.distribution.extra.GenIntSequentialDistribution;
 import se.sics.p2ptoolbox.util.network.NatType;
 import se.sics.p2ptoolbox.util.network.NatedAddress;
@@ -52,7 +55,7 @@ import se.sics.p2ptoolbox.util.network.impl.BasicNatedAddress;
  * @author Alex Ormenisan <aaor@sics.se>
  * @author Md. Rizvi Hasan <mrhasan@kth.se>
  */
-public class SwimScenarioP1T1 {
+public class SwimScenarioP2T3_2 {
 
     private static long seed;
     private static InetAddress localHost;
@@ -254,7 +257,7 @@ public class SwimScenarioP1T1 {
     //check se.sics.p2ptoolbox.simulator.dsl.distribution for more distributions
     //you can implement your own - by extending Distribution
     public static SimulationScenario simpleBoot(final long seed) {
-        SwimScenarioP1T1.seed = seed;
+        SwimScenarioP2T3_2.seed = seed;
         SimulationScenario scen = new SimulationScenario() {
             {
                 StochasticProcess startAggregator = new StochasticProcess() {
@@ -265,11 +268,20 @@ public class SwimScenarioP1T1 {
                 };
 
                 StochasticProcess startPeers = new StochasticProcess() {
+                    {                    	
+                                              
+                        eventInterArrivalTime(constant(1000));                      
+//                        Integer[] _nodes = new Integer[]{10,16,18,21,30,32,39,40,};
+                        raise(100, startNodeOp, new BasicIntSequentialDistribution(10));
+                        
+                        
+                    }
+                };
+                
+                StochasticProcess startPublicPeers = new StochasticProcess() {
                     {
-                    	// To impose limit on piggy-bagged message change the 
-                    	// flag JOIN_QUEUE_SIZE and DELETE_QUEUE_SIZE
-                    	// in Swim Componet (SwimComp.java)
-                    	int total_nodes=100;  // Tested 20, 50, 100, 200, 500
+                    	
+                    	int total_nodes=70;  // Tested 70, 50, 20 according to private peers
                     	int start_id, node_count=0;
                     	Integer[] nodeIdList = new Integer[total_nodes];                      
                         for (start_id=2; node_count<total_nodes; node_count++,start_id+=2)
@@ -281,10 +293,26 @@ public class SwimScenarioP1T1 {
                     }
                 };
                 
+                StochasticProcess startPrivatePeers = new StochasticProcess() {
+                    {
+                    	
+                    	int total_nodes=30;  // Tested 30, 50, 80 according to public peers
+                    	int start_id, node_count=0;
+                    	Integer[] nodeIdList = new Integer[total_nodes];                      
+                        for (start_id=1; node_count<total_nodes; node_count++,start_id+=2)
+                        	nodeIdList[node_count] = start_id;
+                                              
+                        eventInterArrivalTime(constant(1000));                      
+                        raise(nodeIdList.length, startNodeOp, new GenIntSequentialDistribution(nodeIdList));                        
+                        
+                    }
+                };
+                
                 StochasticProcess joinPeers = new StochasticProcess() {
                     {
                         eventInterArrivalTime(constant(1000));                          
-                        raise(1, startNodeOp, new GenIntSequentialDistribution(new Integer[]{18}));
+//                        raise(1, startNodeOp, new GenIntSequentialDistribution(new Integer[]{18}));
+                        raise(5, startNodeOp, new GenIntSequentialDistribution(new Integer[]{20,21,80,51,10}));
                         //raise(100, startNodeOp, new BasicIntSequentialDistribution(10));
                         
                     }
@@ -293,9 +321,30 @@ public class SwimScenarioP1T1 {
                 StochasticProcess killPeers = new StochasticProcess() {
                     {
                         eventInterArrivalTime(constant(1000));
-                        raise(1, killNodeOp, new ConstantDistribution(Integer.class, 18));
-                        raise(1, killNodeOp, new ConstantDistribution(Integer.class, 20));
-                        
+//                        raise(1, killNodeOp, new GenIntSequentialDistribution(new Integer[]{25}));
+//                        raise(5, killNodeOp, new GenIntSequentialDistribution(new Integer[]{20,21,30,71,10}));                        
+//                        raise(10, killNodeOp, new GenIntSequentialDistribution(new Integer[]{20,21,30,51,10,
+//                        																	 45,27,19,75,91}));                        
+                        raise(20, killNodeOp, new GenIntSequentialDistribution(new Integer[]{21,13,05,27,19,
+                        																	 20,30,40,50,60,
+                        																	 22,32,42,52,62,
+                        																	 26,36,46,56,66
+                        																	 }));                        
+//                        raise(30, killNodeOp, new GenIntSequentialDistribution(new Integer[]{21,13,05,27,19,
+//																							 40,42,46,48,44,
+//																							 60,62,66,68,64,
+//																							 20,22,26,28,24,
+//																							 50,52,56,58,54,
+//																							 70,72,76,78,74
+//																							 }));                        
+
+                    }
+                };
+                
+                StochasticProcess killPeers2 = new StochasticProcess() {
+                    {
+                        eventInterArrivalTime(constant(1000));
+                        raise(1, killNodeOp, new ConstantDistribution(Integer.class, 16));                        
                     }
                 };
 
@@ -327,19 +376,19 @@ public class SwimScenarioP1T1 {
                     }
                 };
 
-                // To impose limit on piggy-bagged message change the 
-            	// flag JOIN_QUEUE_SIZE and DELETE_QUEUE_SIZE
-            	// in Swim Componet (SwimComp.java)
                 startAggregator.start();
-                startPeers.startAfterTerminationOf(1000, startAggregator);
+//                startPeers.startAfterTerminationOf(1000, startAggregator);
+                startPublicPeers.startAfterTerminationOf(1000, startAggregator);
+                startPrivatePeers.startAfterTerminationOf(1000, startPublicPeers);
 //                deadLinks1.startAfterTerminationOf(10000,startPeers);
 //                disconnectedNodes1.startAfterTerminationOf(10000, deadLinks1);
 //                joinPeers.startAfterStartOf(10000, deadLinks1);
 //                reincurnate.startAfterTerminationOf(10000, joinPeers);               
-//                killPeers.startAfterTerminationOf(1*10000, startPeers);
+                killPeers.startAfterTerminationOf(9*1000, startPrivatePeers);
+//                killPeers2.startAfterTerminationOf(1*10000, killPeers);
                 
-                fetchSimulationResult.startAfterTerminationOf(90*10000, startPeers);
-                terminateAfterTerminationOf(90*1000, fetchSimulationResult);
+                fetchSimulationResult.startAfterTerminationOf(900*1000, killPeers);
+                terminateAfterTerminationOf(60*1000, fetchSimulationResult);
 
             }
         };

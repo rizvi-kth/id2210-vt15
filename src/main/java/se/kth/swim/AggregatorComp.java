@@ -83,16 +83,14 @@ public class AggregatorComp extends ComponentDefinition {
         public void handle(NetStatus status) {
         	// -- Riz
        	 
-//        	if(status.getContent().deletedNodeList.size()>=5)
-//                
+//        	if(status.getContent().deletedNodeList.size()>=20)
 //        	{ 
 //        	        
 //	        	if(!convergedNodes.contains(status.getHeader().getSource().getId()))
-//	        	        
 //	        	{ 
 //	        		convergedNodes.add(status.getHeader().getSource().getId());
-		        	//if(status.getHeader().getSource().getId()== 10)  // <<<--- To watch only node 10's convergence
-		        	log.info("Status from:{} - Vicinity of {} nodes:[" 
+//		        	if(status.getHeader().getSource().getId()== 10)  // <<<--- To watch only node 10's convergence
+		             	log.info("Status from:{} - Vicinity of {} nodes:[" 
 		        								+ ProcessViciniTyList(status.getContent().vicinityNodeList) + "] dead" 
 		        								+ ProcessSet(status.getContent().deletedNodeList) + "  joined" 
 		        							    + ProcessSet(status.getContent().joinedNodeList) +  "  suspect [ " 
