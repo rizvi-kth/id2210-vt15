@@ -52,7 +52,7 @@ import se.sics.p2ptoolbox.util.network.impl.BasicNatedAddress;
  * @author Alex Ormenisan <aaor@sics.se>
  * @author Md. Rizvi Hasan <mrhasan@kth.se>
  */
-public class SwimScenarioP1T1 {
+public class SwimScenarioP1T5 {
 
     private static long seed;
     private static InetAddress localHost;
@@ -254,7 +254,7 @@ public class SwimScenarioP1T1 {
     //check se.sics.p2ptoolbox.simulator.dsl.distribution for more distributions
     //you can implement your own - by extending Distribution
     public static SimulationScenario simpleBoot(final long seed) {
-        SwimScenarioP1T1.seed = seed;
+        SwimScenarioP1T5.seed = seed;
         SimulationScenario scen = new SimulationScenario() {
             {
                 StochasticProcess startAggregator = new StochasticProcess() {
@@ -266,17 +266,11 @@ public class SwimScenarioP1T1 {
 
                 StochasticProcess startPeers = new StochasticProcess() {
                     {
-                    	// To impose limit on piggy-bagged message change the 
-                    	// flag JOIN_QUEUE_SIZE and DELETE_QUEUE_SIZE
-                    	// in Swim Componet (SwimComp.java)
-                    	int total_nodes=100;  // Tested 20, 50, 100, 200, 500
-                    	int start_id, node_count=0;
-                    	Integer[] nodeIdList = new Integer[total_nodes];                      
-                        for (start_id=2; node_count<total_nodes; node_count++,start_id+=2)
-                        	nodeIdList[node_count] = start_id;
-                                              
-                        eventInterArrivalTime(constant(1000));                      
-                        raise(nodeIdList.length, startNodeOp, new GenIntSequentialDistribution(nodeIdList));                        
+                    	
+                    	eventInterArrivalTime(constant(1000));                      
+                        raise(3, startNodeOp, new GenIntSequentialDistribution(new Integer[]{10,16,20}));
+//                        raise(nodeIdList.length, startNodeOp, new GenIntSequentialDistribution(nodeIdList));
+                        
                         
                     }
                 };
@@ -294,7 +288,7 @@ public class SwimScenarioP1T1 {
                     {
                         eventInterArrivalTime(constant(1000));
                         raise(1, killNodeOp, new ConstantDistribution(Integer.class, 18));
-                        raise(1, killNodeOp, new ConstantDistribution(Integer.class, 20));
+                        
                         
                     }
                 };
@@ -329,14 +323,14 @@ public class SwimScenarioP1T1 {
 
                 startAggregator.start();
                 startPeers.startAfterTerminationOf(1000, startAggregator);
-//                deadLinks1.startAfterTerminationOf(10000,startPeers);
+                deadLinks1.startAfterTerminationOf(5*1000,startPeers);
 //                disconnectedNodes1.startAfterTerminationOf(10000, deadLinks1);
 //                joinPeers.startAfterStartOf(10000, deadLinks1);
 //                reincurnate.startAfterTerminationOf(10000, joinPeers);               
 //                killPeers.startAfterTerminationOf(1*10000, startPeers);
                 
-                fetchSimulationResult.startAfterTerminationOf(90*10000, startPeers);
-                terminateAfterTerminationOf(90*1000, fetchSimulationResult);
+                fetchSimulationResult.startAfterTerminationOf(90*1000, startPeers);
+                terminateAfterTerminationOf(60*1000, fetchSimulationResult);
 
             }
         };

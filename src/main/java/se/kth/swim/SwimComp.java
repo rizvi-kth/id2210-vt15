@@ -108,9 +108,12 @@ public class SwimComp extends ComponentDefinition {
     private Set<NatEntity> newNATList = new HashSet<NatEntity>();
     
     
-    private int JOIN_QUEUE_SIZE = 100;
-    private int DELETE_QUEUE_SIZE = 50;
-    private int PING_REQ_RANDOM_K = 2;    
+    private int JOIN_QUEUE_SIZE = 2;
+    private int DELETE_QUEUE_SIZE = 10;
+    private int PING_REQ_RANDOM_K = 2;
+    private int PING_WAIT_TIME = 2;
+    private int SUSPECTION_TIME = 50;
+    
     //--    
 
     public SwimComp(SwimInit init) {
@@ -300,7 +303,7 @@ public class SwimComp extends ComponentDefinition {
             			
             		//}            			
             		// Suspecting in less than 2 cycle-time or (2*1000) millisecond
-            		if (vNode.nodeStatus == "LIVE" && vNode.waitingForPongCount >= 2 ){            			
+            		if (vNode.nodeStatus == "LIVE" && vNode.waitingForPongCount >= PING_WAIT_TIME ){            			
             			log.info("{} detected no response from {} and SUSPECTING... ", new Object[]{selfAddress.getId(), vNode.nodeAdress });
             			// Add to suspected list for dissamination
             			AddUniqueToSuspectedList(vNode);
@@ -309,7 +312,7 @@ public class SwimComp extends ComponentDefinition {
             			
             		}  
             		// Dead declare in less than 4 cycle-time or (4*1000) millisecond
-            		if (vNode.nodeStatus == "SUSPECTED" && vNode.waitingForPongCount >= 30 ){
+            		if (vNode.nodeStatus == "SUSPECTED" && vNode.waitingForPongCount >= SUSPECTION_TIME ){
             			log.info("{} detected DEAD node {} ", new Object[]{selfAddress.getId(), vNode.nodeAdress });
             			vNode.nodeStatus = "DEAD";  
             			_justDead = vNode;
@@ -371,6 +374,15 @@ public class SwimComp extends ComponentDefinition {
         	// PING: ping the ping candidates 
         	if (!_pingCandidates.isEmpty() )
         	{
+//        		Set<NatedAddress> _pingCandidates2 = new HashSet<NatedAddress>();
+//        		// Priority ping to the  suspected
+//        		for (VicinityEntry _p: _pingCandidates){
+//        			if (_p.nodeStatus == "SUSPECTED")
+//        				goPingTheNode(_p.nodeAdress);
+//        			else
+//        				_pingCandidates2.add(_p.nodeAdress);
+//        		}        		
+        		
         		log.info("{} has ping candidates {} ", new Object[]{selfAddress.getId(),_pingCandidates.size()  });
         		// If the set with single element, ping that
         		if (_pingCandidates.size() == 1 ){
@@ -379,8 +391,8 @@ public class SwimComp extends ComponentDefinition {
         		}
         		// Pick a random element to ping
         		else{
-        			//goPingTheNode(randomNode(_pingCandidates));
-        			goPingTheNode(SequentialNode(_pingCandidates));
+        			goPingTheNode(randomNode(_pingCandidates));
+//        			goPingTheNode(SequentialNode(_pingCandidates));
         		}        		
         	}
             //--
@@ -750,9 +762,9 @@ public class SwimComp extends ComponentDefinition {
         	ArrayList<NatedAddress> _piggyBackedJoinedNodes = new ArrayList<NatedAddress>(piggyBackedJoinedNodes);
         	for(NatedAddress newPiggyBackedNode : _piggyBackedJoinedNodes){
         		if (newPiggyBackedNode.getId() != selfAddress.getId() ){
-        			AddUniqueToVicinity(newPiggyBackedNode);
-            		AddUniqueToJoinedList(newPiggyBackedNode);	
-        		}            		            		
+        			AddUniqueToVicinity(newPiggyBackedNode);            		
+        		}   
+        		AddUniqueToJoinedList(newPiggyBackedNode);	
         	}
 //        }
         
@@ -911,6 +923,7 @@ public class SwimComp extends ComponentDefinition {
     
     private int SequentialPingPointer = 0;
     private NatedAddress SequentialNode(Set<NatedAddress> nodes) {
+    	log.info("{} send sequential pointer {} ", new Object[]{selfAddress.getId(), SequentialPingPointer });    	
     	if (SequentialPingPointer >= nodes.size()){
     		SequentialPingPointer = 0;
     	}    		

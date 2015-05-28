@@ -52,7 +52,7 @@ import se.sics.p2ptoolbox.util.network.impl.BasicNatedAddress;
  * @author Alex Ormenisan <aaor@sics.se>
  * @author Md. Rizvi Hasan <mrhasan@kth.se>
  */
-public class SwimScenarioP1T1 {
+public class SwimScenarioP1T2 {
 
     private static long seed;
     private static InetAddress localHost;
@@ -254,7 +254,7 @@ public class SwimScenarioP1T1 {
     //check se.sics.p2ptoolbox.simulator.dsl.distribution for more distributions
     //you can implement your own - by extending Distribution
     public static SimulationScenario simpleBoot(final long seed) {
-        SwimScenarioP1T1.seed = seed;
+        SwimScenarioP1T2.seed = seed;
         SimulationScenario scen = new SimulationScenario() {
             {
                 StochasticProcess startAggregator = new StochasticProcess() {
@@ -266,17 +266,18 @@ public class SwimScenarioP1T1 {
 
                 StochasticProcess startPeers = new StochasticProcess() {
                     {
-                    	// To impose limit on piggy-bagged message change the 
-                    	// flag JOIN_QUEUE_SIZE and DELETE_QUEUE_SIZE
-                    	// in Swim Componet (SwimComp.java)
-                    	int total_nodes=100;  // Tested 20, 50, 100, 200, 500
+                    	
+                    	
+                    	int total_nodes=100;
                     	int start_id, node_count=0;
                     	Integer[] nodeIdList = new Integer[total_nodes];                      
                         for (start_id=2; node_count<total_nodes; node_count++,start_id+=2)
                         	nodeIdList[node_count] = start_id;
                                               
                         eventInterArrivalTime(constant(1000));                      
-                        raise(nodeIdList.length, startNodeOp, new GenIntSequentialDistribution(nodeIdList));                        
+//                        raise(2, startNodeOp, new GenIntSequentialDistribution(new Integer[]{10,16}));
+                        raise(nodeIdList.length, startNodeOp, new GenIntSequentialDistribution(nodeIdList));
+                        
                         
                     }
                 };
@@ -284,7 +285,7 @@ public class SwimScenarioP1T1 {
                 StochasticProcess joinPeers = new StochasticProcess() {
                     {
                         eventInterArrivalTime(constant(1000));                          
-                        raise(1, startNodeOp, new GenIntSequentialDistribution(new Integer[]{18}));
+                        raise(3, startNodeOp, new GenIntSequentialDistribution(new Integer[]{18,20,22}));
                         //raise(100, startNodeOp, new BasicIntSequentialDistribution(10));
                         
                     }
@@ -293,9 +294,7 @@ public class SwimScenarioP1T1 {
                 StochasticProcess killPeers = new StochasticProcess() {
                     {
                         eventInterArrivalTime(constant(1000));
-                        raise(1, killNodeOp, new ConstantDistribution(Integer.class, 18));
-                        raise(1, killNodeOp, new ConstantDistribution(Integer.class, 20));
-                        
+                        raise(5, killNodeOp, new GenIntSequentialDistribution(new Integer[]{10,30,50,70,90}));                        
                     }
                 };
 
@@ -327,16 +326,20 @@ public class SwimScenarioP1T1 {
                     }
                 };
 
+                
+                // 	Test of node failure.
+                
+                
                 startAggregator.start();
                 startPeers.startAfterTerminationOf(1000, startAggregator);
-//                deadLinks1.startAfterTerminationOf(10000,startPeers);
+//                deadLinks1.startAfterTerminationOf(1000,startPeers);
 //                disconnectedNodes1.startAfterTerminationOf(10000, deadLinks1);
-//                joinPeers.startAfterStartOf(10000, deadLinks1);
+//                joinPeers.startAfterStartOf(1000, deadLinks1);
 //                reincurnate.startAfterTerminationOf(10000, joinPeers);               
-//                killPeers.startAfterTerminationOf(1*10000, startPeers);
+                killPeers.startAfterTerminationOf(1000, startPeers);
                 
-                fetchSimulationResult.startAfterTerminationOf(90*10000, startPeers);
-                terminateAfterTerminationOf(90*1000, fetchSimulationResult);
+                fetchSimulationResult.startAfterTerminationOf(90*10000, killPeers);
+                terminateAfterTerminationOf(1*10000, fetchSimulationResult);
 
             }
         };
