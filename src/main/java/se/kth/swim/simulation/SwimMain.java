@@ -48,10 +48,12 @@ public class SwimMain {
 //        LauncherComp.scenario = SwimScenarioP1T5.simpleBoot(1234L);
 //        LauncherComp.scenario = SwimScenarioP1T3.simpleBoot(1234L);
 //        LauncherComp.scenario = SwimScenarioP1T2.simpleBoot(1234L);
-        LauncherComp.scenario = SwimScenarioP1T1.simpleBoot(1234L);
+//        LauncherComp.scenario = SwimScenarioP1T1.simpleBoot(1234L);
+//        LauncherComp.scenario = SwimScenarioP1T6.simpleBoot(1234L);
+//        LauncherComp.scenario = SwimScenarioP1T7.simpleBoot(1234L);
         
 //        CROUPIER
-//        LauncherComp.scenario = SwimScenarioP2T3_2.simpleBoot(1234L);
+        LauncherComp.scenario = SwimScenarioP2T3_2.simpleBoot(1234L);
 //        LauncherComp.scenario = SwimScenarioP2T3.simpleBoot(1234L);
 //        LauncherComp.scenario = SwimScenarioNATtest.simpleBoot(1234L);
         

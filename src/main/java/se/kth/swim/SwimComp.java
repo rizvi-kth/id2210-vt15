@@ -108,8 +108,8 @@ public class SwimComp extends ComponentDefinition {
     private Set<NatEntity> newNATList = new HashSet<NatEntity>();
     
     
-    private int JOIN_QUEUE_SIZE = 100;
-    private int DELETE_QUEUE_SIZE = 30;
+    private int JOIN_QUEUE_SIZE = 100;	// Set this to limit the piggybacked information size
+    private int DELETE_QUEUE_SIZE = 5;  // Set this to limit the piggybacked information size
     private int PING_REQ_RANDOM_K = 2;
     private int PING_WAIT_TIME = 2;
     private int SUSPECTION_TIME = 50;

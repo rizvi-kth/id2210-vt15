@@ -16,6 +16,14 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
+
+/*
+ * TODOs to run this scenario file.
+ * 
+ * 1. In the Aggregator Component uncomment the section NORMAL and comment rest of the codes in the status handler.
+ *  
+ */
+
 package se.kth.swim.simulation;
 
 import java.net.InetAddress;

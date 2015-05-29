@@ -20,7 +20,10 @@ package se.kth.swim;
 
 import java.util.ArrayList;
 import java.util.Deque;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.slf4j.Logger;
@@ -47,6 +50,9 @@ public class AggregatorComp extends ComponentDefinition {
     private Positive<Timer> timer = requires(Timer.class);
     // --Riz
     private List<Integer> convergedNodes = new ArrayList<Integer>();
+    private List<Entry> convergedNodes2 = new ArrayList<Entry>();
+    private Map<Integer,ArrayList> failureMap = new HashMap(); 
+    
     // --
 
     private final NatedAddress selfAddress;
@@ -82,38 +88,182 @@ public class AggregatorComp extends ComponentDefinition {
         @Override
         public void handle(NetStatus status) {
         	// -- Riz
-       	 
-//        	if(status.getContent().deletedNodeList.size()>=20)
-//        	{ 
-//        	        
-//	        	if(!convergedNodes.contains(status.getHeader().getSource().getId()))
-//	        	{ 
-//	        		convergedNodes.add(status.getHeader().getSource().getId());
-//		        	if(status.getHeader().getSource().getId()== 10)  // <<<--- To watch only node 10's convergence
-		             	log.info("Status from:{} - Vicinity of {} nodes:[" 
-		        								+ ProcessViciniTyList(status.getContent().vicinityNodeList) + "] dead" 
-		        								+ ProcessSet(status.getContent().deletedNodeList) + "  joined" 
-		        							    + ProcessSet(status.getContent().joinedNodeList) +  "  suspect [ " 
-		        							    + ProcessPiggyEntitySet(status.getContent().suspectedNodeList) + " ] Parents"
-		        							    + ProcessParents(status.getHeader().getSource().getParents()) + " newNats"
-		        							    + ProcessSet(status.getContent().newNATList), 
-		                    new Object[]{status.getHeader().getSource(),            					 
-		            					 status.getContent().vicinityNodeList.size()}
-		      				);
-//		        }
-//        	}
         	
-//        		log.info("{} status from:{} - Sent Pings:{} ,Received Pongs:{}, with vicinity of {} nodes: " + ProcessViciniTyList(status.getContent().vicinityNodeList) , 
-//                      new Object[]{selfAddress.getId(),         			
-//              					 status.getHeader().getSource(), 
-//              					 status.getContent().sentPings, status.getContent().receivedPongs,
-//              					 status.getContent().vicinityNodeList.size()}
-//        				);
-//            log.info("{} status from:{} - Received Pings:{} ,Received Pongs:{}, with vicinity of nodes:" + ProcessViciniTyList(status.getContent().vicinityNodeList), 
-//                    new Object[]{selfAddress.getId(), 
-//            					 status.getHeader().getSource(), 
-//            					 status.getContent().receivedPings, status.getContent().receivedPongs}
-//            					 );
+        	
+        	// #### TAST-3-PHASE-2 - START : For scenario SwimScenarioP2T3_2 ************************
+        	int DELETE_PIGGYBACK_QUEUE_FOR_SWIM =5;   // Set it the value you set DELETE_QUEUE_SIZE in swim component.
+        	int FAILED_NODES_COUNT = 10;			  	// Set it tne value you set in SwimScenarioP2T3_2 for dead nodes count.
+        	
+        	if (FAILED_NODES_COUNT > DELETE_PIGGYBACK_QUEUE_FOR_SWIM){
+	        	boolean _printFlag = false;
+	        	if(status.getContent().deletedNodeList.size()>=DELETE_PIGGYBACK_QUEUE_FOR_SWIM)
+	            {
+	        		Entry _temp = null;
+	        		for (Entry _e : convergedNodes2){
+	        			if (_e.id == status.getHeader().getSource().getId()){
+	        				_temp = _e;
+	        				if (_e.deads.contains(status.getContent().deletedNodeList.getFirst().getId())){
+	        					
+	        				}
+	        				else{
+	        					_e.deads.add(status.getContent().deletedNodeList.getFirst().getId());
+	        					if (_e.deads.size() >= FAILED_NODES_COUNT)
+	        						_printFlag = true;        					
+	        				}
+	        			}        				
+	        		}
+	        		if (_temp == null){
+	        			Entry _ee = new Entry(); 
+	        			_ee.id = status.getHeader().getSource().getId();
+	        			_ee.deads.add(status.getContent().deletedNodeList.getFirst().getId());
+	        			convergedNodes2.add(_ee);
+	        			_temp = _ee;
+	
+	        		}
+	        		
+	        		
+	        		if (_printFlag == true)
+	                 	log.info("Status from:{} " 
+	                 							+ " deadQ" + ProcessSet(status.getContent().deletedNodeList) +
+	                 							", deads-detected {}{} "
+	                 							+ "  joined" + ProcessSet(status.getContent().joinedNodeList) +  "  suspect [ " 
+	            							    + ProcessPiggyEntitySet(status.getContent().suspectedNodeList) + " ] Parents"
+	            							    + ProcessParents(status.getHeader().getSource().getParents()) + " newNats"
+	            							    + ProcessSet(status.getContent().newNATList), 
+	                        new Object[]{status.getHeader().getSource(),            					 
+	                 								_temp.deads.size(),_temp.deads}
+	          				);
+	            	
+	            }
+        	
+        	}
+        	else{
+        		if(status.getContent().deletedNodeList.size()>=FAILED_NODES_COUNT)
+            	{            	        
+    	        	if(!convergedNodes.contains(status.getHeader().getSource().getId()))
+    	        	{ 
+    	        		convergedNodes.add(status.getHeader().getSource().getId());
+    	        		log.info("Status from:{} - Vicinity of {}, dead" 
+								+ ProcessSet(status.getContent().deletedNodeList) + "  joined" 
+							    + ProcessSet(status.getContent().joinedNodeList) +  "  suspect [ " 
+							    + ProcessPiggyEntitySet(status.getContent().suspectedNodeList) + " ] Parents"
+							    + ProcessParents(status.getHeader().getSource().getParents()) + " newNats"
+							    + ProcessSet(status.getContent().newNATList), 
+							    new Object[]{status.getHeader().getSource(),            					 
+									status.getContent().vicinityNodeList.size()}
+				);
+    	        		
+    	        	}
+            	}
+        		
+        	}
+        	// #### TAST-3-PHASE-2 - END	**************************
+        	
+        	         
+        	        
+        	/*
+        	//###  Filtering for Phase 1 Task 6*****************************
+        	// Turn-on this logic to filter log information to observe convergence of failure detection for Phase 1 Task 6
+        	
+        	
+        	int FAILED_NODES_COUNT = 10;			  	// Set it tne value you set in SwimScenarioP2T3_2 for dead nodes count.
+        	
+			if (status.getContent().deletedNodeList.size() >= FAILED_NODES_COUNT) 
+
+			{
+				if (!convergedNodes.contains(status.getHeader().getSource()
+						.getId()))
+
+				{
+					convergedNodes.add(status.getHeader().getSource().getId());
+
+					log.info(
+							"Status from:{} - Vicinity of {} nodes:["
+									+ ProcessViciniTyList(status.getContent().vicinityNodeList)
+									+ "] dead"
+									+ ProcessSet(status.getContent().deletedNodeList)
+									+ "  joined"
+									+ ProcessSet(status.getContent().joinedNodeList)
+									+ "  suspect [ "
+									+ ProcessPiggyEntitySet(status.getContent().suspectedNodeList)
+									+ " ] newNats"
+									+ ProcessSet(status.getContent().newNATList),
+							new Object[] { status.getHeader().getSource(),
+
+							status.getContent().vicinityNodeList.size() });
+				}
+
+			}
+        			
+        	//###  End of Filtering for Phase 1 Task 6*******************************   
+        	*/
+			
+			
+			
+			
+			
+			/*
+        	//### Filtering for Phase 1 Task 7**************************
+            // Turn-on this logic block to filter log information for Phase 1 Task 7
+        	// Turn-off the rest 
+        	
+        	int NETWORK_SIZE = 100;
+        	int NUMBER_OF_FAILED_NODE = 10;
+        	int _rest = NETWORK_SIZE - NUMBER_OF_FAILED_NODE;
+        	        
+        	for(NatedAddress _d: status.getContent().deletedNodeList){
+        	if(failureMap.containsKey(_d.getId()))
+        	{
+        	if(!failureMap.get(_d.getId()).contains(status.getHeader().getSource().getId()))
+        	{
+        	(failureMap.get(_d.getId())).add(status.getHeader().getSource().getId());
+        	}
+        	}
+        	else
+        	{
+        	failureMap.put(_d.getId(), new ArrayList<Integer>());
+        	(failureMap.get(_d.getId())).add(status.getHeader().getSource().getId());
+        	}
+        	}
+        	         
+        	        Set<Integer> allKeys = failureMap.keySet();
+        	         
+        	        Iterator iterator = allKeys.iterator();
+        	        while(iterator.hasNext())
+        	        {
+        	          Integer element = (Integer) iterator.next();
+        	          if(!convergedNodes.contains(element.intValue()))
+        	          {
+        	 
+        	          if(failureMap.get(element.intValue()).size()>=_rest) 
+        	          {
+        	          convergedNodes.add(element.intValue());
+        	          log.info("Converged for failure of node - " 
+        	+ element.intValue()); 
+        	          
+        	          }
+        	          }
+        	 
+        	        }        	         
+        	        
+        	// ### End of Filtering for Phase 1 Task 7************************
+            */
+        	
+        	
+        	
+        	// #### NORMAL - START
+//        	log.info("Status from:{} - Vicinity of {} nodes:[" 
+//		        								+ ProcessViciniTyList(status.getContent().vicinityNodeList) + "] dead" 
+//		        								+ ProcessSet(status.getContent().deletedNodeList) + "  joined" 
+//		        							    + ProcessSet(status.getContent().joinedNodeList) +  "  suspect [ " 
+//		        							    + ProcessPiggyEntitySet(status.getContent().suspectedNodeList) + " ] Parents"
+//		        							    + ProcessParents(status.getHeader().getSource().getParents()) + " newNats"
+//		        							    + ProcessSet(status.getContent().newNATList), 
+//		                    new Object[]{status.getHeader().getSource(),            					 
+//		            					 status.getContent().vicinityNodeList.size()}
+//		      				);
+        	// #### NORMAL - END
+        	
             // --
         }
     };
@@ -192,5 +342,14 @@ public class AggregatorComp extends ComponentDefinition {
     	return st;
     	    	
     }
+    
+    private class Entry{
+    	public int id;
+    	public List<Integer> deads = new ArrayList<Integer>();    	
+    	
+    }
+
+    
     // --
 }
+
